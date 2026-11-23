@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>G.ia — Monitor Operacional</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    :root {
+      --bg: #070d19;
+      --panel: #0e172a;
+      --card: #131f38;
+      --border: #233354;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --cyan: #22d3ee;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    header {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 20px; background: var(--panel); border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
+    nav { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px; background: #0a1222; border-bottom: 1px solid var(--border); }
+    .tab-btn {
+      background: var(--card); color: var(--muted); border: 1px solid var(--border);
+      padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600;
+    }
+    .tab-btn.active { background: rgba(34, 211, 238, 0.14); color: var(--cyan); border-color: var(--cyan); }
+    main { padding: 20px; max-width: 1440px; margin: 0 auto; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+    .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    .val { font-size: 26px; font-weight: 800; margin-top: 6px; }
+    .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .progress-wrap { background: #091120; border-radius: 999px; height: 14px; overflow: hidden; border: 1px solid var(--border); margin: 10px 0; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--green)); transition: width .35s ease; }
+    input, select, button {
+      background: #091120; color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 12px; font-size: 14px;
+    }
+    button.primary { background: var(--cyan); color: #041018; font-weight: 700; border: none; cursor: pointer; }
+    button.success { background: var(--green); color: #041018; font-weight: 700; border: none; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: 12px; }
+    .badge { padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; display: inline-block; }
+    .ok { background: rgba(34,197,94,.16); color: #4ade80; }
+    .warn { background: rgba(245,158,11,.16); color: #fbbf24; }
+    .bad { background: rgba(239,68,68,.16); color: #f87171; }
+    .hidden { display: none !important; }
+    .alert-box {
+      border-left: 5px solid var(--red); background: rgba(239, 68, 68, 0.12);
+      padding: 14px; border-radius: 10px; margin-bottom: 10px;
+      animation: pulseBorder 1.2s infinite;
+    }
+    @keyframes pulseBorder {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="dot"></span>
+      <span id="headerTitle">G.ia — Painel Operacional</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span class="sub" id="syncStatus">Aguardando extensão...</span>
+      <button class="tab-btn" id="modeSwitchBtn" onclick="toggleOperatorMode()">Abrir Modo Operador (Mesa)</button>
+      <button class="tab-btn" onclick="requestSync()">Sincronizar</button>
+    </div>
+  </header>
+
+  <nav id="adminNav">
+    <button class="tab-btn active" data-tab="recebimento">1. Recebimento (Meta & Ritmo)</button>
+    <button class="tab-btn" data-tab="mesas">2. Mesas, Rotas & Espera Frota</button>
+    <button class="tab-btn" data-tab="salvamento">3. Estação de Salvamento (PDF / Etiqueta)</button>
+  </nav>
+
+  <main>
+    <!-- MODO OPERADOR (TRAVADO NA MESA + OPS) -->
+    <section id="operatorPortal" class="hidden">
+      <div class="card" id="opLoginCard" style="max-width:460px; margin:20px auto;">
+        <div class="label">Acesso do Conferente</div>
+        <h2 style="margin:6px 0 12px 0;">Entrar na Minha Mesa</h2>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <select id="opLoginMesa">
+            <option value="">Selecione a Mesa...</option>
+            <option value="Mesa 01">Mesa 01</option>
+            <option value="Mesa 02">Mesa 02</option>
+            <option value="Mesa 03">Mesa 03</option>
+            <option value="Mesa 04">Mesa 04</option>
+            <option value="Mesa 05">Mesa 05</option>
+            <option value="Mesa 06">Mesa 06</option>
+            <option value="Mesa 07">Mesa 07</option>
+            <option value="Mesa 08">Mesa 08</option>
+            <option value="Mesa 09">Mesa 09</option>
+            <option value="Mesa 10">Mesa 10</option>
+          </select>
+          <input id="opLoginOps" placeholder="Digite seu OPS (ex: ops179126)" />
+          <button class="primary" onclick="loginOperatorMesa()">Entrar</button>
+        </div>
+        <div class="sub" style="margin-top:10px;">Ao entrar, o som de alerta e o pisca-aba ficam ativos para pacotes do Salvamento.</div>
+      </div>
+
+      <div id="opDashboard" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+          <div>
+            <strong style="font-size:18px;" id="opLoggedHeader">Mesa 01 · ops179126</strong>
+            <div class="sub">Alerta sonoro e pisca-aba ativos</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="tab-btn" onclick="playBeep()">Testar Som</button>
+            <button class="tab-btn" onclick="logoutOperatorMesa()">Trocar Mesa / OPS</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="label">Notificações — Pacotes para Buscar no Salvamento / Devolução</div>
+          <div id="opAlertsContainer" style="margin-top:10px;">
+            <div class="sub">Nenhum pacote aguardando retirada para a sua rota no momento.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="label">Rota em Andamento Agora</div>
+          <div id="opCurrentRouteContainer" style="margin-top:10px;">
+            <div class="sub">Nenhuma rota em andamento para você agora.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="label">Minhas Rotas Finalizadas Hoje</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Rota</th>
+                <th>Pacotes</th>
+                <th>Tempo para Finalizar</th>
+                <th>Falt.</th>
+                <th>Inc.</th>
+              </tr>
+            </thead>
+            <tbody id="opHistoryBody">
+              <tr><td colspan="5" class="sub">Nenhuma rota finalizada ainda neste turno.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA 1 GESTÃO: RECEBIMENTO -->
+    <section id="tab-recebimento">
+      <div class="card">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px;">
+          <div>
+            <div class="label">Progresso da Meta Diária de Recebimento</div>
+            <div style="font-size:22px; font-weight:800; margin-top:4px;" id="recFraction">0 / 29.000</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label for="dailyGoalInput" class="label">Meta do Dia:</label>
+            <input type="number" id="dailyGoalInput" value="29000" min="1" step="100" style="width:130px;" />
+            <button class="primary" onclick="saveDailyGoal()">Salvar Meta</button>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar" id="recProgressBar" style="width:0%;"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:13px;">
+          <span id="recPctText">0,00% concluído</span>
+          <span id="recRemainingText">Faltam 29.000 (100,00%)</span>
+        </div>
+      </div>
+
+      <div class="grid-4">
+        <div class="card">
+          <div class="label">Quantidade que Temos que Fazer</div>
+          <div class="val" id="kpiGoal">29.000</div>
+          <div class="sub">Meta programada</div>
+        </div>
+        <div class="card">
+          <div class="label">Quantidade que Já Fizemos</div>
+          <div class="val" id="kpiDone" style="color:var(--cyan);">0</div>
+          <div class="sub" id="kpiDonePct">0,00% concluído</div>
+        </div>
+        <div class="card">
+          <div class="label">Falta para Terminar</div>
+          <div class="val" id="kpiLeft" style="color:var(--amber);">29.000</div>
+          <div class="sub" id="kpiLeftPct">100,00% restante</div>
+        </div>
+        <div class="card">
+          <div class="label">Total de Todos os Operadores / Hora</div>
+          <div class="val" id="kpiTotalRate" style="color:var(--green);">0 /h</div>
+          <div class="sub" id="kpiEta">Previsão: --</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">Produtividade Individual (Meta: 1.000 a 1.500 /h)</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Operador (OPS)</th>
+              <th>Status</th>
+              <th>Bipados</th>
+              <th>Ritmo / Hora</th>
+              <th>Faixa (1.000–1.500/h)</th>
+            </tr>
+          </thead>
+          <tbody id="recOperatorsBody">
+            <tr><td colspan="5" class="sub">Aguardando leitura da tela de Gestão de Recebimento...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ABA 2 GESTÃO: MESAS, ROTAS & ESPERA FROTA -->
+    <section id="tab-mesas" class="hidden">
+      <div class="grid-2">
+        <div class="card">
+          <div class="label">Registrar / Atualizar Rota na Mesa</div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px; margin-top:10px;">
+            <input id="mMesa" placeholder="Mesa (ex: Mesa 01)" />
+            <input id="mOps" placeholder="OPS (ex: ops179126)" />
+            <input id="mOperador" placeholder="Nome conferente" />
+            <input id="mRota" placeholder="Rota (ex: G-24)" />
+            <input id="mTotalPct" type="number" placeholder="Total pacotes" />
+            <input id="mDonePct" type="number" placeholder="Bipados" />
+            <input id="mFalt" type="number" placeholder="Faltantes" value="0" />
+            <input id="mInc" type="number" placeholder="Incorretos" value="0" />
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <button class="primary" onclick="upsertActiveRoute()">Iniciar / Atualizar Rota</button>
+            <button class="tab-btn" onclick="finishRouteAndStartFleetWait()">Finalizar Rota -> Espera Frota</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="label">Mesas em Espera de Frota (Aguardando Carro)</div>
+          <div id="fleetSummary" style="margin-top:10px;" class="sub">Nenhuma mesa aguardando frota no momento.</div>
+        </div>
+      </div>
+
+      <div class="grid-2" id="mesasCardsGrid"></div>
+    </section>
+
+    <!-- ABA 3 GESTÃO: ESTAÇÃO DE SALVAMENTO / PDF -->
+    <section id="tab-salvamento" class="hidden">
+      <div class="card" style="max-width:680px;">
+        <div class="label">Estação de Salvamento — Leitor de Etiqueta / PDF (Elgin L420)</div>
+        <div class="sub">Selecione o PDF da etiqueta (ou informe Gaiola/Rota e BR) para disparar o alerta piscando + som na mesa da rota.</div>
+        <div style="margin-top:10px;">
+          <input type="file" id="pdfFileInput" accept="application/pdf" />
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-top:10px;">
+          <input id="saveCage" placeholder="Gaiola/Rota (ex: G-24)" />
+          <input id="saveBr" placeholder="Código BR (ex: BR264511182145U)" />
+          <select id="saveTipo">
+            <option value="Salvamento de Erros">Salvamento de Erros</option>
+            <option value="Devolução">Devolução</option>
+          </select>
+        </div>
+        <div style="margin-top:10px;">
+          <button class="primary" onclick="sendSaveAlert()">Enviar Notificação para a Mesa</button>
+        </div>
+        <div id="pdfExtractPreview" class="sub" style="margin-top:8px;"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const STATE_KEY = "GIA_WEB_STATE_V1";
+    const OP_SESSION_KEY = "GIA_OPERATOR_SESSION";
+    const BASE_TITLE = "G.ia — Monitor Operacional";
+
+    const defaultState = {
+      dailyGoal: 29000,
+      receive: { totalRecebido: 0, totalPorHoraTodos: 0, operators: [] },
+      mesas: [],
+      routeHistory: [],
+      alerts: []
+    };
+
+    let state = loadState();
+    let isOperatorMode = new URLSearchParams(window.location.search).get("modo") === "mesa";
+    let opSession = loadOpSession();
+    let knownAlertIds = new Set();
+    let blinkTimer = null;
+    let blinkStep = false;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STATE_KEY);
+        return raw ? { ...defaultState, ...JSON.parse(raw) } : structuredClone(defaultState);
+      } catch {
+        return structuredClone(defaultState);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STATE_KEY, JSON.stringify(state));
+      window.postMessage({ source: "GIA_WEB_APP", type: "SAVE_SHARED_PATCH", patch: { webState: state } }, "*");
+    }
+
+    function loadOpSession() {
+      try {
+        return JSON.parse(localStorage.getItem(OP_SESSION_KEY) || "null");
+      } catch {
+        return null;
+      }
+    }
+
+    function fmtNum(n) { return Number(n || 0).toLocaleString("pt-BR"); }
+    function fmtDuration(sec) {
+      const s = Math.max(0, Math.floor(sec));
+      return `${Math.floor(s / 60)}min ${String(s % 60).padStart(2, "0")}s`;
+    }
+
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [880, 1174].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.16);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + i * 0.18);
+          osc.stop(ctx.currentTime + i * 0.18 + 0.17);
+        });
+      } catch {}
+    }
+
+    function updateTabBlink(activeAlertsForOp) {
+      if (!isOperatorMode || !opSession || !activeAlertsForOp.length) {
+        if (blinkTimer) {
+          clearInterval(blinkTimer);
+          blinkTimer = null;
+        }
+        document.title = BASE_TITLE;
+        return;
+      }
+
+      if (!blinkTimer) {
+        blinkTimer = setInterval(() => {
+          blinkStep = !blinkStep;
+          const first = activeAlertsForOp[0];
+          document.title = blinkStep
+            ? `🚨 (${activeAlertsForOp.length}) PACOTE SALVO - ${first.cage}!`
+            : `⚠️ BUSCAR NO SALVAMENTO!`;
+        }, 750);
+      }
+    }
+
+    function applyLayoutMode() {
+      document.getElementById("operatorPortal").classList.toggle("hidden", !isOperatorMode);
+      document.getElementById("adminNav").classList.toggle("hidden", isOperatorMode);
+      ["recebimento", "mesas", "salvamento"].forEach((t) => {
+        document.getElementById("tab-" + t).classList.add("hidden");
+      });
+
+      if (isOperatorMode) {
+        document.getElementById("headerTitle").textContent = "G.ia — Terminal da Mesa";
+        document.getElementById("modeSwitchBtn").textContent = "Voltar para Gestão";
+        document.getElementById("opLoginCard").classList.toggle("hidden", !!opSession);
+        document.getElementById("opDashboard").classList.toggle("hidden", !opSession);
+        if (opSession) {
+          document.getElementById("opLoggedHeader").textContent = `${opSession.mesa} · ${opSession.ops}`;
+        }
+      } else {
+        document.getElementById("headerTitle").textContent = "G.ia — Painel Operacional";
+        document.getElementById("modeSwitchBtn").textContent = "Abrir Modo Operador (Mesa)";
+        const activeBtn = document.querySelector(".tab-btn[data-tab].active");
+        const tabName = activeBtn ? activeBtn.dataset.tab : "recebimento";
+        document.getElementById("tab-" + tabName).classList.remove("hidden");
+      }
+    }
+
+    function toggleOperatorMode() {
+      isOperatorMode = !isOperatorMode;
+      applyLayoutMode();
+      renderAll();
+    }
+
+    function loginOperatorMesa() {
+      const mesa = document.getElementById("opLoginMesa").value.trim();
+      const ops = document.getElementById("opLoginOps").value.trim().toLowerCase();
+      if (!mesa || !ops) return alert("Escolha a Mesa e digite seu OPS.");
+      opSession = { mesa, ops };
+      localStorage.setItem(OP_SESSION_KEY, JSON.stringify(opSession));
+      playBeep();
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+      applyLayoutMode();
+      renderAll();
+    }
+
+    function logoutOperatorMesa() {
+      opSession = null;
+      localStorage.removeItem(OP_SESSION_KEY);
+      updateTabBlink([]);
+      applyLayoutMode();
+    }
+
+    function getAlertsForOperator() {
+      if (!opSession) return [];
+      const myMesa = opSession.mesa.toLowerCase();
+      const myOps = opSession.ops.toLowerCase();
+      const myActiveRoute = state.mesas.find(
+        (m) => m.mesa.toLowerCase() === myMesa || m.ops.toLowerCase() === myOps
+      );
+      const myCage = myActiveRoute ? myActiveRoute.rota.toUpperCase() : "";
+
+      return state.alerts.filter((a) => {
+        if (a.pickedUp) return false;
+        const matchMesa = (a.mesa || "").toLowerCase() === myMesa;
+        const matchOps = (a.ops || "").toLowerCase() === myOps;
+        const matchRoute = myCage && (a.cage || "").toUpperCase() === myCage;
+        return matchMesa || matchOps || matchRoute;
+      });
+    }
+
+    function markAlertPickedUp(id) {
+      const idx = state.alerts.findIndex((a) => a.id === id);
+      if (idx >= 0) {
+        state.alerts[idx].pickedUp = true;
+        saveState();
+        renderAll();
+      }
+    }
+
+    function renderOperatorPortal() {
+      if (!isOperatorMode || !opSession) return;
+      const now = Date.now();
+      const myAlerts = getAlertsForOperator();
+
+      let hasBrandNew = false;
+      for (const a of myAlerts) {
+        if (!knownAlertIds.has(a.id)) {
+          knownAlertIds.add(a.id);
+          hasBrandNew = true;
+        }
+      }
+      if (hasBrandNew) {
+        playBeep();
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(`Pacote salvo — Rota ${myAlerts[0].cage}`, {
+            body: `Buscar ${myAlerts[0].br} na Estação de Salvamento.`
+          });
+        }
+      }
+
+      updateTabBlink(myAlerts);
+
+      const alertsEl = document.getElementById("opAlertsContainer");
+      alertsEl.innerHTML = myAlerts.length
+        ? myAlerts.map((a) => `
+            <div class="alert-box">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div>
+                  <span class="badge bad">${a.tipo}</span>
+                  <strong style="font-size:16px; margin-left:6px;">Rota ${a.cage}: 1 pacote</strong>
+                </div>
+                <button class="success" onclick="markAlertPickedUp('${a.id}')">Já retirei</button>
+              </div>
+              <div class="sub" style="margin-top:6px;">
+                Buscar na Estação de Salvamento · aguardando há <strong>${fmtDuration((now - a.createdAt) / 1000)}</strong>
+              </div>
+              <div style="margin-top:4px; color:var(--cyan); font-weight:700;">${a.br}</div>
+            </div>
+          `).join("")
+        : `<div class="sub">Nenhum pacote aguardando retirada para a sua rota no momento.</div>`;
+
+      const myRoute = state.mesas.find(
+        (m) =>
+          m.status === "EM_ROTA" &&
+          (m.mesa.toLowerCase() === opSession.mesa.toLowerCase() ||
+            m.ops.toLowerCase() === opSession.ops.toLowerCase())
+      );
+
+      const currentEl = document.getElementById("opCurrentRouteContainer");
+      if (myRoute) {
+        const pct = Math.min(100, Math.round((myRoute.done / Math.max(1, myRoute.total)) * 100));
+        const sec = (now - (myRoute.routeStartTs || now)) / 1000;
+        currentEl.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="font-size:18px;">Rota ${myRoute.rota}</strong>
+            <span class="badge ok">Tempo: ${fmtDuration(sec)}</span>
+          </div>
+          <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;"></div></div>
+          <div style="display:flex; justify-content:space-between; font-size:13px;">
+            <span><strong>${myRoute.done}/${myRoute.total}</strong> (${pct}%)</span>
+            <span>Faltantes: <strong>${myRoute.falt}</strong> · Incorretos: <strong>${myRoute.inc}</strong></span>
+          </div>
+        `;
+      } else {
+        currentEl.innerHTML = `<div class="sub">Nenhuma rota em andamento para você agora.</div>`;
+      }
+
+      const myDone = state.routeHistory.filter(
+        (h) =>
+          h.ops.toLowerCase() === opSession.ops.toLowerCase() ||
+          h.mesa.toLowerCase() === opSession.mesa.toLowerCase()
+      );
+      const histBody = document.getElementById("opHistoryBody");
+      histBody.innerHTML = myDone.length
+        ? myDone.map((h) => `
+            <tr>
+              <td><strong>${h.rota}</strong></td>
+              <td>${h.done}/${h.total}</td>
+              <td><strong>${fmtDuration(h.durationSec)}</strong></td>
+              <td>${h.falt}</td>
+              <td>${h.inc}</td>
+            </tr>
+          `).join("")
+        : `<tr><td colspan="5" class="sub">Nenhuma rota finalizada ainda neste turno.</td></tr>`;
+    }
+
+    document.querySelectorAll(".tab-btn[data-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn[data-tab]").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const target = btn.dataset.tab;
+        ["recebimento", "mesas", "salvamento"].forEach((t) => {
+          document.getElementById("tab-" + t).classList.toggle("hidden", t !== target);
+        });
+      });
+    });
+
+    function saveDailyGoal() {
+      const val = Number(document.getElementById("dailyGoalInput").value);
+      if (val > 0) {
+        state.dailyGoal = val;
+        saveState();
+        renderAll();
+      }
+    }
+
+    function requestSync() {
+      window.postMessage({ source: "GIA_WEB_APP", type: "REQUEST_SYNC" }, "*");
+    }
+
+    window.addEventListener("message", (event) => {
+      if (event.source !== window || !event.data || event.data.source !== "GIA_EXTENSION_BRIDGE") return;
+      const p = event.data.payload || {};
+      if (p.receive) state.receive = p.receive;
+      if (p.webState) {
+        state.dailyGoal = p.webState.dailyGoal || state.dailyGoal;
+        state.mesas = p.webState.mesas || state.mesas;
+        state.routeHistory = p.webState.routeHistory || state.routeHistory;
+        state.alerts = p.webState.alerts || state.alerts;
+      }
+      document.getElementById("syncStatus").textContent = "Sincronizado às " + new Date().toLocaleTimeString("pt-BR");
+      renderAll();
+    });
+
+    function renderRecebimento() {
+      const goal = Math.max(1, Number(state.dailyGoal || 29000));
+      const done = Number(state.receive?.totalRecebido || 0);
+      const left = Math.max(0, goal - done);
+      const pctDone = Math.min(100, (done / goal) * 100);
+      const pctLeft = Math.max(0, 100 - pctDone);
+      const totalRate = Number(state.receive?.totalPorHoraTodos || 0);
+
+      document.getElementById("dailyGoalInput").value = goal;
+      document.getElementById("recFraction").textContent = `${fmtNum(done)} / ${fmtNum(goal)}`;
+      document.getElementById("recProgressBar").style.width = `${pctDone.toFixed(2)}%`;
+      document.getElementById("recPctText").textContent = `${pctDone.toFixed(2).replace(".", ",")}% concluído`;
+      document.getElementById("recRemainingText").textContent = `Faltam ${fmtNum(left)} (${pctLeft.toFixed(2).replace(".", ",")}%)`;
+
+      document.getElementById("kpiGoal").textContent = fmtNum(goal);
+      document.getElementById("kpiDone").textContent = fmtNum(done);
+      document.getElementById("kpiDonePct").textContent = `${pctDone.toFixed(2).replace(".", ",")}% concluído`;
+      document.getElementById("kpiLeft").textContent = fmtNum(left);
+      document.getElementById("kpiLeftPct").textContent = `${pctLeft.toFixed(2).replace(".", ",")}% restante`;
+      document.getElementById("kpiTotalRate").textContent = `${fmtNum(totalRate)} /h`;
+      document.getElementById("kpiEta").textContent =
+        left === 0 ? "Meta concluída!" : totalRate > 0 ? `Previsão: ~${(left / totalRate).toFixed(1)}h no ritmo atual` : "Aguardando ritmo...";
+
+      const tbody = document.getElementById("recOperatorsBody");
+      const opsList = state.receive?.operators || [];
+      tbody.innerHTML = opsList.length
+        ? opsList.map((op) => {
+            const r = Number(op.ratePerHour || 0);
+            let badge = `<span class="badge bad">Abaixo (< 1.000/h)</span>`;
+            if (r >= 1000 && r <= 1500) badge = `<span class="badge ok">Na Meta (1.000–1.500/h)</span>`;
+            else if (r > 1500) badge = `<span class="badge ok">Acima (> 1.500/h)</span>`;
+            else if (r >= 750) badge = `<span class="badge warn">Atenção (750–999/h)</span>`;
+            return `<tr><td><strong>${op.opsLabel || op.ops}</strong></td><td>${op.status || "-"}</td><td><strong>${fmtNum(op.totalBipado)}</strong></td><td><strong>${fmtNum(r)} /h</strong></td><td>${badge}</td></tr>`;
+          }).join("")
+        : `<tr><td colspan="5" class="sub">Aguardando leitura da tela de Gestão de Recebimento...</td></tr>`;
+    }
+
+    function upsertActiveRoute() {
+      const mesa = document.getElementById("mMesa").value.trim() || "Mesa 01";
+      const ops = document.getElementById("mOps").value.trim().toLowerCase() || "ops179126";
+      const operador = document.getElementById("mOperador").value.trim() || "Operador";
+      const rota = document.getElementById("mRota").value.trim().toUpperCase() || "G-24";
+      const total = Math.max(1, Number(document.getElementById("mTotalPct").value || 100));
+      const done = Math.max(0, Number(document.getElementById("mDonePct").value || 1));
+      const falt = Math.max(0, Number(document.getElementById("mFalt").value || 0));
+      const inc = Math.max(0, Number(document.getElementById("mInc").value || 0));
+
+      const idx = state.mesas.findIndex((m) => m.mesa.toLowerCase() === mesa.toLowerCase());
+      const item = {
+        mesa, ops, operador, rota, total, done, falt, inc,
+        status: "EM_ROTA",
+        routeStartTs: idx >= 0 && state.mesas[idx].routeStartTs ? state.mesas[idx].routeStartTs : Date.now(),
+        fleetWaitStartTs: null
+      };
+      if (idx >= 0) state.mesas[idx] = item;
+      else state.mesas.push(item);
+
+      saveState();
+      renderAll();
+    }
+
+    function finishRouteAndStartFleetWait() {
+      const mesa = document.getElementById("mMesa").value.trim() || "Mesa 01";
+      const idx = state.mesas.findIndex((m) => m.mesa.toLowerCase() === mesa.toLowerCase());
+      if (idx >= 0) {
+        const m = state.mesas[idx];
+        const durationSec = m.routeStartTs ? (Date.now() - m.routeStartTs) / 1000 : 0;
+        state.routeHistory.unshift({
+          mesa: m.mesa,
+          ops: m.ops,
+          rota: m.rota,
+          done: m.done,
+          total: m.total,
+          falt: m.falt,
+          inc: m.inc,
+          durationSec
+        });
+        m.status = "AGUARDANDO_FROTA";
+        m.fleetWaitStartTs = Date.now();
+        saveState();
+        renderAll();
+      }
+    }
+
+    function renderMesas() {
+      const grid = document.getElementById("mesasCardsGrid");
+      const now = Date.now();
+      const waitingFleet = state.mesas.filter((m) => m.status === "AGUARDANDO_FROTA");
+
+      document.getElementById("fleetSummary").innerHTML = waitingFleet.length
+        ? waitingFleet.map((m) => `<div class="alert-box"><strong>${m.mesa}</strong> (${m.ops}) — Rota <strong>${m.rota}</strong> concluída. Aguardando frota há <strong>${fmtDuration((now - m.fleetWaitStartTs) / 1000)}</strong>.</div>`).join("")
+        : "Nenhuma mesa aguardando frota no momento.";
+
+      grid.innerHTML = state.mesas.length
+        ? state.mesas.map((m) => {
+            const pct = Math.min(100, Math.round((m.done / Math.max(1, m.total)) * 100));
+            return `
+              <div class="card">
+                <div style="display:flex; justify-content:space-between;">
+                  <strong>${m.mesa} · ${m.operador} (${m.ops})</strong>
+                  <span class="badge ${m.status === "EM_ROTA" ? "ok" : "bad"}">${m.status === "EM_ROTA" ? "Rota " + m.rota : "Aguardando Frota"}</span>
+                </div>
+                <div class="sub" style="margin-top:6px;">
+                  Tempo rota: <strong>${fmtDuration((now - (m.routeStartTs || now)) / 1000)}</strong>
+                  ${m.status === "AGUARDANDO_FROTA" ? ` | Espera Frota: <strong style="color:#f87171;">${fmtDuration((now - m.fleetWaitStartTs) / 1000)}</strong>` : ""}
+                </div>
+                <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;"></div></div>
+                <div style="display:flex; justify-content:space-between; font-size:12px;">
+                  <span>${m.done}/${m.total} (${pct}%)</span>
+                  <span>Falt.: <strong>${m.falt}</strong> | Inc.: <strong>${m.inc}</strong></span>
+                </div>
+              </div>
+            `;
+          }).join("")
+        : `<div class="card"><div class="sub">Nenhuma mesa ativa no momento.</div></div>`;
+    }
+
+    function sendSaveAlert() {
+      const cage = (document.getElementById("saveCage").value || "").trim().toUpperCase();
+      const br = (document.getElementById("saveBr").value || "").trim().toUpperCase();
+      const tipo = document.getElementById("saveTipo").value;
+      if (!cage && !br) return;
+
+      const matchedMesa = state.mesas.find((m) => m.rota.toUpperCase() === cage);
+      state.alerts.unshift({
+        id: "AL_" + Date.now(),
+        tipo,
+        cage: cage || "SEM-ROTA",
+        br: br || "SEM-BR",
+        mesa: matchedMesa ? matchedMesa.mesa : "",
+        ops: matchedMesa ? matchedMesa.ops : "",
+        pickedUp: false,
+        createdAt: Date.now()
+      });
+      saveState();
+      renderAll();
+    }
+
+    document.getElementById("pdfFileInput").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file || !window.pdfjsLib) return;
+      const buf = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+      let fullText = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        fullText += " " + content.items.map((it) => it.str).join(" ");
+      }
+      const brMatch = fullText.match(/\bBR[A-Z0-9]{8,25}\b/i);
+      const cageMatch = fullText.match(/\b[A-Z]-\d{1,3}\b/);
+      if (brMatch) document.getElementById("saveBr").value = brMatch[0].toUpperCase();
+      if (cageMatch) document.getElementById("saveCage").value = cageMatch[0].toUpperCase();
+      document.getElementById("pdfExtractPreview").textContent =
+        `Etiqueta lida: Gaiola=${cageMatch ? cageMatch[0].toUpperCase() : "-"} | BR=${brMatch ? brMatch[0].toUpperCase() : "-"}`;
+    });
+
+    function renderAll() {
+      renderRecebimento();
+      renderMesas();
+      renderOperatorPortal();
+    }
+
+    applyLayoutMode();
+    setInterval(renderAll, 1000);
+    renderAll();
+    requestSync();
+  </script>
+</body>
+</html>
