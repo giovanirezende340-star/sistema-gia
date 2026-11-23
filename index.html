@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>G.ia — Monitor Operacional</title>
+  <title>G.ia — Monitor Operacional Shopee Xpress</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
@@ -32,8 +32,8 @@
       padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600;
     }
     .tab-btn.active { background: rgba(34, 211, 238, 0.14); color: var(--cyan); border-color: var(--cyan); }
-    main { padding: 20px; max-width: 1440px; margin: 0 auto; }
-    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    main { padding: 20px; max-width: 1480px; margin: 0 auto; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
     .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
@@ -70,7 +70,7 @@
   <header>
     <div class="brand">
       <span class="dot"></span>
-      <span id="headerTitle">G.ia — Painel Operacional</span>
+      <span id="headerTitle">G.ia — Painel Operacional Shopee Xpress</span>
     </div>
     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
       <span class="sub" id="syncStatus">Aguardando extensão...</span>
@@ -80,35 +80,26 @@
   </header>
 
   <nav id="adminNav">
-    <button class="tab-btn active" data-tab="recebimento">1. Recebimento (Meta & Ritmo)</button>
-    <button class="tab-btn" data-tab="mesas">2. Mesas, Rotas & Espera Frota</button>
-    <button class="tab-btn" data-tab="salvamento">3. Estação de Salvamento (PDF / Etiqueta)</button>
+    <button class="tab-btn active" data-tab="recebimento">Recebimento</button>
+    <button class="tab-btn" data-tab="mesas">Auditoria, Mesas & Frota</button>
+    <button class="tab-btn" data-tab="salvamento">Salvamento / PDF</button>
+    <button class="tab-btn" data-tab="volumosos">Volumosos</button>
   </nav>
 
   <main>
-    <!-- MODO OPERADOR (TRAVADO NA MESA + OPS) -->
+    <!-- MODO OPERADOR (30 MESAS + OPS) -->
     <section id="operatorPortal" class="hidden">
       <div class="card" id="opLoginCard" style="max-width:460px; margin:20px auto;">
         <div class="label">Acesso do Conferente</div>
         <h2 style="margin:6px 0 12px 0;">Entrar na Minha Mesa</h2>
         <div style="display:flex; flex-direction:column; gap:10px;">
           <select id="opLoginMesa">
-            <option value="">Selecione a Mesa...</option>
-            <option value="Mesa 01">Mesa 01</option>
-            <option value="Mesa 02">Mesa 02</option>
-            <option value="Mesa 03">Mesa 03</option>
-            <option value="Mesa 04">Mesa 04</option>
-            <option value="Mesa 05">Mesa 05</option>
-            <option value="Mesa 06">Mesa 06</option>
-            <option value="Mesa 07">Mesa 07</option>
-            <option value="Mesa 08">Mesa 08</option>
-            <option value="Mesa 09">Mesa 09</option>
-            <option value="Mesa 10">Mesa 10</option>
+            <option value="">Selecione a Mesa (01 a 30)...</option>
           </select>
           <input id="opLoginOps" placeholder="Digite seu OPS (ex: ops179126)" />
           <button class="primary" onclick="loginOperatorMesa()">Entrar</button>
         </div>
-        <div class="sub" style="margin-top:10px;">Ao entrar, o som de alerta e o pisca-aba ficam ativos para pacotes do Salvamento.</div>
+        <div class="sub" style="margin-top:10px;">Alerta sonoro e pisca-aba ativos para pacotes do Salvamento da sua rota.</div>
       </div>
 
       <div id="opDashboard" class="hidden">
@@ -157,7 +148,7 @@
       </div>
     </section>
 
-    <!-- ABA 1 GESTÃO: RECEBIMENTO -->
+    <!-- MENU 1: RECEBIMENTO -->
     <section id="tab-recebimento">
       <div class="card">
         <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px;">
@@ -222,13 +213,56 @@
       </div>
     </section>
 
-    <!-- ABA 2 GESTÃO: MESAS, ROTAS & ESPERA FROTA -->
+    <!-- MENU 2: AUDITORIA, MESAS & FROTA -->
     <section id="tab-mesas" class="hidden">
+      <div class="grid-4">
+        <div class="card">
+          <div class="label">Rotas que Temos que Fazer</div>
+          <div class="val" id="auditTotalRoutes">0</div>
+          <div class="sub" id="auditPageInfo">Paginação: 24 rotas/página</div>
+        </div>
+        <div class="card">
+          <div class="label">Rotas Já Feitas</div>
+          <div class="val" id="auditDoneRoutes" style="color:var(--green);">0</div>
+          <div class="sub">Concluídas / validadas</div>
+        </div>
+        <div class="card">
+          <div class="label">Rotas que Faltam Fazer</div>
+          <div class="val" id="auditLeftRoutes" style="color:var(--amber);">0</div>
+          <div class="sub">Pendentes no turno</div>
+        </div>
+        <div class="card">
+          <div class="label">Paginação Gestão de Auditoria</div>
+          <div style="margin-top:8px;">
+            <button class="primary" onclick="triggerNextAuditPage()">Avançar Próxima Página (24 rotas)</button>
+          </div>
+          <div class="sub" id="auditCurrentPageBadge">Página atual: 1</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">Quem Está Conferindo / Auditando e Pacotes Bipados (Sem Depender de Mesa)</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Conferente / Auditor (OPS)</th>
+              <th>Rota Atual</th>
+              <th>Rotas Feitas / Total</th>
+              <th>Pacotes Bipados</th>
+              <th>Status de Bipagem</th>
+            </tr>
+          </thead>
+          <tbody id="auditorsTableBody">
+            <tr><td colspan="5" class="sub">Aguardando dados da Gestão de Auditoria / VT Detail...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
       <div class="grid-2">
         <div class="card">
-          <div class="label">Registrar / Atualizar Rota na Mesa</div>
+          <div class="label">Registrar / Atualizar Rota na Mesa (01 a 30)</div>
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px; margin-top:10px;">
-            <input id="mMesa" placeholder="Mesa (ex: Mesa 01)" />
+            <select id="mMesa"></select>
             <input id="mOps" placeholder="OPS (ex: ops179126)" />
             <input id="mOperador" placeholder="Nome conferente" />
             <input id="mRota" placeholder="Rota (ex: G-24)" />
@@ -252,7 +286,7 @@
       <div class="grid-2" id="mesasCardsGrid"></div>
     </section>
 
-    <!-- ABA 3 GESTÃO: ESTAÇÃO DE SALVAMENTO / PDF -->
+    <!-- MENU 3: SALVAMENTO / PDF -->
     <section id="tab-salvamento" class="hidden">
       <div class="card" style="max-width:680px;">
         <div class="label">Estação de Salvamento — Leitor de Etiqueta / PDF (Elgin L420)</div>
@@ -274,19 +308,82 @@
         <div id="pdfExtractPreview" class="sub" style="margin-top:8px;"></div>
       </div>
     </section>
+
+    <!-- MENU 4: VOLUMOSOS -->
+    <section id="tab-volumosos" class="hidden">
+      <div class="grid-4">
+        <div class="card">
+          <div class="label">Total de Volumosos Hoje</div>
+          <div class="val" id="volTotalCount">0</div>
+          <div class="sub">Registrados no turno</div>
+        </div>
+        <div class="card">
+          <div class="label">Aguardando Expedição / Retirada</div>
+          <div class="val" id="volPendingCount" style="color:var(--amber);">0</div>
+          <div class="sub">Em aberto</div>
+        </div>
+        <div class="card">
+          <div class="label">Expedidos / Baixados</div>
+          <div class="val" id="volDoneCount" style="color:var(--green);">0</div>
+          <div class="sub">Concluídos</div>
+        </div>
+        <div class="card">
+          <div class="label">Filtro Rápido por Rota</div>
+          <input id="volFilterInput" placeholder="Filtrar BR, rota ou mesa..." oninput="renderVolumosos()" style="margin-top:8px; width:100%;" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">Registrar Pacote Volumoso</div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin-top:10px;">
+          <input id="volBr" placeholder="Código BR / Pacote" />
+          <input id="volRota" placeholder="Rota / Gaiola (ex: G-24)" />
+          <select id="volMesa"></select>
+          <input id="volOps" placeholder="OPS / Conferente" />
+          <select id="volTipo">
+            <option value="Volumoso Padrão">Volumoso Padrão</option>
+            <option value="Caixa Grande / Pesado">Caixa Grande / Pesado</option>
+            <option value="Fora de Calha">Fora de Calha</option>
+          </select>
+          <button class="primary" onclick="addVolumoso()">Registrar Volumoso</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">Controle de Volumosos</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>BR / Pacote</th>
+              <th>Rota / Gaiola</th>
+              <th>Mesa / OPS</th>
+              <th>Tipo</th>
+              <th>Status</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="volumososTableBody">
+            <tr><td colspan="7" class="sub">Nenhum volumoso registrado ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </main>
 
   <script>
     const STATE_KEY = "GIA_WEB_STATE_V1";
     const OP_SESSION_KEY = "GIA_OPERATOR_SESSION";
-    const BASE_TITLE = "G.ia — Monitor Operacional";
+    const BASE_TITLE = "G.ia — Monitor Operacional Shopee Xpress";
 
     const defaultState = {
       dailyGoal: 29000,
       receive: { totalRecebido: 0, totalPorHoraTodos: 0, operators: [] },
+      auditStats: { pageNum: 1, perPageDetected: 24, totalRoutesExpected: 0, completedRoutesCount: 0, remainingRoutesCount: 0, byAuditor: [] },
       mesas: [],
       routeHistory: [],
-      alerts: []
+      alerts: [],
+      volumosos: []
     };
 
     let state = loadState();
@@ -295,6 +392,22 @@
     let knownAlertIds = new Set();
     let blinkTimer = null;
     let blinkStep = false;
+
+    function populateMesasSelects() {
+      const options = Array.from({ length: 30 }, (_, i) => {
+        const num = String(i + 1).padStart(2, "0");
+        return `<option value="Mesa ${num}">Mesa ${num}</option>`;
+      }).join("");
+
+      const opLoginMesa = document.getElementById("opLoginMesa");
+      if (opLoginMesa) {
+        opLoginMesa.innerHTML = `<option value="">Selecione a Mesa (01 a 30)...</option>` + options;
+      }
+      const mMesa = document.getElementById("mMesa");
+      if (mMesa) mMesa.innerHTML = options;
+      const volMesa = document.getElementById("volMesa");
+      if (volMesa) volMesa.innerHTML = `<option value="Sem Mesa">Sem Mesa</option>` + options;
+    }
 
     function loadState() {
       try {
@@ -366,7 +479,7 @@
     function applyLayoutMode() {
       document.getElementById("operatorPortal").classList.toggle("hidden", !isOperatorMode);
       document.getElementById("adminNav").classList.toggle("hidden", isOperatorMode);
-      ["recebimento", "mesas", "salvamento"].forEach((t) => {
+      ["recebimento", "mesas", "salvamento", "volumosos"].forEach((t) => {
         document.getElementById("tab-" + t).classList.add("hidden");
       });
 
@@ -379,7 +492,7 @@
           document.getElementById("opLoggedHeader").textContent = `${opSession.mesa} · ${opSession.ops}`;
         }
       } else {
-        document.getElementById("headerTitle").textContent = "G.ia — Painel Operacional";
+        document.getElementById("headerTitle").textContent = "G.ia — Painel Operacional Shopee Xpress";
         document.getElementById("modeSwitchBtn").textContent = "Abrir Modo Operador (Mesa)";
         const activeBtn = document.querySelector(".tab-btn[data-tab].active");
         const tabName = activeBtn ? activeBtn.dataset.tab : "recebimento";
@@ -396,7 +509,7 @@
     function loginOperatorMesa() {
       const mesa = document.getElementById("opLoginMesa").value.trim();
       const ops = document.getElementById("opLoginOps").value.trim().toLowerCase();
-      if (!mesa || !ops) return alert("Escolha a Mesa e digite seu OPS.");
+      if (!mesa || !ops) return alert("Escolha a Mesa (01 a 30) e digite seu OPS.");
       opSession = { mesa, ops };
       localStorage.setItem(OP_SESSION_KEY, JSON.stringify(opSession));
       playBeep();
@@ -533,7 +646,7 @@
         document.querySelectorAll(".tab-btn[data-tab]").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         const target = btn.dataset.tab;
-        ["recebimento", "mesas", "salvamento"].forEach((t) => {
+        ["recebimento", "mesas", "salvamento", "volumosos"].forEach((t) => {
           document.getElementById("tab-" + t).classList.toggle("hidden", t !== target);
         });
       });
@@ -552,15 +665,25 @@
       window.postMessage({ source: "GIA_WEB_APP", type: "REQUEST_SYNC" }, "*");
     }
 
+    function triggerNextAuditPage() {
+      window.postMessage({
+        source: "GIA_WEB_APP",
+        type: "SAVE_SHARED_PATCH",
+        patch: { triggerNextAuditPage: true }
+      }, "*");
+    }
+
     window.addEventListener("message", (event) => {
       if (event.source !== window || !event.data || event.data.source !== "GIA_EXTENSION_BRIDGE") return;
       const p = event.data.payload || {};
       if (p.receive) state.receive = p.receive;
+      if (p.auditStats) state.auditStats = p.auditStats;
       if (p.webState) {
         state.dailyGoal = p.webState.dailyGoal || state.dailyGoal;
         state.mesas = p.webState.mesas || state.mesas;
         state.routeHistory = p.webState.routeHistory || state.routeHistory;
         state.alerts = p.webState.alerts || state.alerts;
+        state.volumosos = p.webState.volumosos || state.volumosos;
       }
       document.getElementById("syncStatus").textContent = "Sincronizado às " + new Date().toLocaleTimeString("pt-BR");
       renderAll();
@@ -651,6 +774,32 @@
     }
 
     function renderMesas() {
+      const a = state.auditStats || {};
+      document.getElementById("auditTotalRoutes").textContent = fmtNum(a.totalRoutesExpected || 0);
+      document.getElementById("auditDoneRoutes").textContent = fmtNum(a.completedRoutesCount || 0);
+      document.getElementById("auditLeftRoutes").textContent = fmtNum(a.remainingRoutesCount || 0);
+      document.getElementById("auditCurrentPageBadge").textContent = `Página atual: ${a.pageNum || 1}`;
+
+      const auditorsBody = document.getElementById("auditorsTableBody");
+      const list = a.byAuditor || [];
+      auditorsBody.innerHTML = list.length
+        ? list.map((item) => {
+            const hasScan = Number(item.bipados || 0) > 0;
+            const badge = hasScan
+              ? `<span class="badge ok">Bipando (${fmtNum(item.bipados)})</span>`
+              : `<span class="badge bad">Sem bipagem registrada</span>`;
+            return `
+              <tr>
+                <td><strong>${item.auditor}</strong></td>
+                <td>${item.currentRoute || "-"}</td>
+                <td>${item.doneRoutes || 0} / ${item.routesCount || 0}</td>
+                <td><strong>${fmtNum(item.bipados || 0)}</strong></td>
+                <td>${badge}</td>
+              </tr>
+            `;
+          }).join("")
+        : `<tr><td colspan="5" class="sub">Aguardando dados da Gestão de Auditoria / VT Detail...</td></tr>`;
+
       const grid = document.getElementById("mesasCardsGrid");
       const now = Date.now();
       const waitingFleet = state.mesas.filter((m) => m.status === "AGUARDANDO_FROTA");
@@ -704,6 +853,71 @@
       renderAll();
     }
 
+    function addVolumoso() {
+      const br = (document.getElementById("volBr").value || "").trim().toUpperCase();
+      const rota = (document.getElementById("volRota").value || "").trim().toUpperCase();
+      const mesa = document.getElementById("volMesa").value || "Sem Mesa";
+      const ops = (document.getElementById("volOps").value || "").trim().toLowerCase() || "-";
+      const tipo = document.getElementById("volTipo").value;
+      if (!br && !rota) return alert("Informe o código BR ou a Rota/Gaiola do volumoso.");
+
+      state.volumosos.unshift({
+        id: "VOL_" + Date.now(),
+        hora: new Date().toLocaleTimeString("pt-BR"),
+        br: br || "SEM-BR",
+        rota: rota || "SEM-ROTA",
+        mesa,
+        ops,
+        tipo,
+        done: false
+      });
+
+      document.getElementById("volBr").value = "";
+      saveState();
+      renderAll();
+    }
+
+    function toggleVolumosoDone(id) {
+      const item = state.volumosos.find((v) => v.id === id);
+      if (item) {
+        item.done = !item.done;
+        saveState();
+        renderAll();
+      }
+    }
+
+    function renderVolumosos() {
+      const list = state.volumosos || [];
+      const filter = (document.getElementById("volFilterInput")?.value || "").trim().toLowerCase();
+      const filtered = filter
+        ? list.filter((v) =>
+            `${v.br} ${v.rota} ${v.mesa} ${v.ops} ${v.tipo}`.toLowerCase().includes(filter)
+          )
+        : list;
+
+      const pending = list.filter((v) => !v.done).length;
+      const done = list.filter((v) => v.done).length;
+
+      document.getElementById("volTotalCount").textContent = fmtNum(list.length);
+      document.getElementById("volPendingCount").textContent = fmtNum(pending);
+      document.getElementById("volDoneCount").textContent = fmtNum(done);
+
+      const tbody = document.getElementById("volumososTableBody");
+      tbody.innerHTML = filtered.length
+        ? filtered.map((v) => `
+            <tr>
+              <td>${v.hora}</td>
+              <td><strong>${v.br}</strong></td>
+              <td>${v.rota}</td>
+              <td>${v.mesa} (${v.ops})</td>
+              <td>${v.tipo}</td>
+              <td>${v.done ? `<span class="badge ok">Expedido</span>` : `<span class="badge warn">Pendente</span>`}</td>
+              <td><button class="tab-btn" onclick="toggleVolumosoDone('${v.id}')">${v.done ? "Reabrir" : "Dar Baixa"}</button></td>
+            </tr>
+          `).join("")
+        : `<tr><td colspan="7" class="sub">Nenhum volumoso registrado ainda.</td></tr>`;
+    }
+
     document.getElementById("pdfFileInput").addEventListener("change", async (e) => {
       const file = e.target.files?.[0];
       if (!file || !window.pdfjsLib) return;
@@ -726,9 +940,11 @@
     function renderAll() {
       renderRecebimento();
       renderMesas();
+      renderVolumosos();
       renderOperatorPortal();
     }
 
+    populateMesasSelects();
     applyLayoutMode();
     setInterval(renderAll, 1000);
     renderAll();
