@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -39,10 +39,10 @@
     #neural-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
     .login-card {
       position: relative; z-index: 2; width: 410px; max-width: 92vw;
-      background: rgba(10, 17, 34, 0.52);
+      background: rgba(10, 17, 34, 0.56);
       backdrop-filter: blur(18px) saturate(140%);
       -webkit-backdrop-filter: blur(18px) saturate(140%);
-      border: 1px solid rgba(186, 230, 253, 0.22);
+      border: 1px solid rgba(186, 230, 253, 0.24);
       border-top: 1px solid rgba(255, 255, 255, 0.35);
       border-radius: 20px;
       padding: 36px 32px;
@@ -65,7 +65,7 @@
     .form-group label { display: block; font-size: 12px; color: #cbd5e1; margin-bottom: 6px; font-weight: 600; }
     .form-control {
       width: 100%; padding: 10px 12px; border-radius: 9px;
-      background: rgba(6, 11, 24, 0.75);
+      background: rgba(6, 11, 24, 0.78);
       border: 1px solid rgba(148, 163, 184, 0.28);
       color: var(--text-main); font-size: 13.5px; outline: none; transition: 0.2s;
     }
@@ -1144,7 +1144,7 @@ const defaultDB = {
     dailyGoal: 29000
   },
   users: [
-    { id: 'admin', name: 'Administrador do Hub', pass: '1234', role: 'ADMIN' },
+    { id: 'admin', name: 'Administrador do Hub', pass: 'gia2026', role: 'ADMIN' },
     { id: 'ops68103', name: 'Conferente Triagem', pass: '1234', role: 'OPERADOR' }
   ],
   rotas: [],
@@ -1168,6 +1168,34 @@ const defaultDB = {
   alertasSalvamento: []
 };
 
+function cloneData(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (!raw) return cloneData(defaultDB);
+    const parsed = JSON.parse(raw);
+    const mergedUsers = Array.isArray(parsed.users) && parsed.users.length
+      ? parsed.users.map((u) => (u.id && u.id.toLowerCase() === 'admin' ? { ...u, pass: 'gia2026' } : u))
+      : cloneData(defaultDB.users);
+    if (!mergedUsers.some((u) => u.id && u.id.toLowerCase() === 'admin')) {
+      mergedUsers.unshift({ id: 'admin', name: 'Administrador do Hub', pass: 'gia2026', role: 'ADMIN' });
+    }
+    return {
+      ...cloneData(defaultDB),
+      ...parsed,
+      users: mergedUsers,
+      config: { ...cloneData(defaultDB.config), ...(parsed.config || {}) },
+      receive: { ...cloneData(defaultDB.receive), ...(parsed.receive || {}) },
+      auditStats: { ...cloneData(defaultDB.auditStats), ...(parsed.auditStats || {}) }
+    };
+  } catch {
+    return cloneData(defaultDB);
+  }
+}
+
 let db = loadDB();
 let currentUser = null;
 let mesaSession = loadMesaSession();
@@ -1177,23 +1205,6 @@ let mapLayerGroup = null;
 let knownAlertIds = new Set();
 let mesaBlinkTimer = null;
 let mesaBlinkFlip = false;
-
-function loadDB() {
-  try {
-    const raw = localStorage.getItem(DB_KEY);
-    if (!raw) return structuredClone(defaultDB);
-    const parsed = JSON.parse(raw);
-    return {
-      ...structuredClone(defaultDB),
-      ...parsed,
-      config: { ...structuredClone(defaultDB.config), ...(parsed.config || {}) },
-      receive: { ...structuredClone(defaultDB.receive), ...(parsed.receive || {}) },
-      auditStats: { ...structuredClone(defaultDB.auditStats), ...(parsed.auditStats || {}) }
-    };
-  } catch {
-    return structuredClone(defaultDB);
-  }
-}
 
 function saveDB(syncToExtension = true) {
   localStorage.setItem(DB_KEY, JSON.stringify(db));
@@ -1260,8 +1271,8 @@ function populateMesaSelects() {
 
 /* ================= 3. LOGIN & PERMISSÕES ================= */
 function fazerLogin() {
-  const u = document.getElementById('login-user').value.trim();
-  const p = document.getElementById('login-pass').value.trim();
+  const u = (document.getElementById('login-user').value || '').trim();
+  const p = (document.getElementById('login-pass').value || '').trim();
   const found = db.users.find((x) => x.id.toLowerCase() === u.toLowerCase() && x.pass === p);
   if (!found) {
     document.getElementById('login-error').style.display = 'block';
@@ -1328,8 +1339,8 @@ function toggleOperatorMode() {
 
 /* ================= 4. TERMINAL DA MESA (01 A 30 + OPS) ================= */
 function entrarNaMesa() {
-  const mesa = document.getElementById('mesa-select-login').value.trim();
-  const ops = document.getElementById('mesa-ops-login').value.trim().toLowerCase();
+  const mesa = (document.getElementById('mesa-select-login').value || '').trim();
+  const ops = (document.getElementById('mesa-ops-login').value || '').trim().toLowerCase();
   if (!mesa || !ops) {
     alert('Selecione a Mesa (01 a 30) e informe seu OPS.');
     return;
@@ -1934,10 +1945,10 @@ function triggerNextAuditPage() {
 }
 
 function upsertMesaRoute() {
-  const mesa = document.getElementById('mMesa').value.trim() || 'Mesa 01';
-  const ops = document.getElementById('mOps').value.trim().toLowerCase() || 'ops179126';
-  const operador = document.getElementById('mOperador').value.trim() || 'Conferente';
-  const rota = document.getElementById('mRota').value.trim().toUpperCase() || 'G-24';
+  const mesa = (document.getElementById('mMesa').value || '').trim() || 'Mesa 01';
+  const ops = (document.getElementById('mOps').value || '').trim().toLowerCase() || 'ops179126';
+  const operador = (document.getElementById('mOperador').value || '').trim() || 'Conferente';
+  const rota = (document.getElementById('mRota').value || '').trim().toUpperCase() || 'G-24';
   const total = Math.max(1, Number(document.getElementById('mTotalPct').value || 100));
   const done = Math.max(0, Number(document.getElementById('mDonePct').value || 0));
   const falt = Math.max(0, Number(document.getElementById('mFalt').value || 0));
@@ -1959,7 +1970,7 @@ function upsertMesaRoute() {
 }
 
 function finalizarRotaMesa() {
-  const mesa = document.getElementById('mMesa').value.trim() || 'Mesa 01';
+  const mesa = (document.getElementById('mMesa').value || '').trim() || 'Mesa 01';
   const idx = db.mesasAtivas.findIndex((m) => m.mesa.toLowerCase() === mesa.toLowerCase());
   if (idx >= 0) {
     const m = db.mesasAtivas[idx];
@@ -2046,8 +2057,8 @@ function setAuditStatus(cageCode, newStatus) {
 }
 
 function enviarAlertaSalvamento() {
-  const mesa = document.getElementById('saveMesa').value.trim();
-  const ops = document.getElementById('saveOps').value.trim().toLowerCase();
+  const mesa = (document.getElementById('saveMesa').value || '').trim();
+  const ops = (document.getElementById('saveOps').value || '').trim().toLowerCase();
   const cage = (document.getElementById('saveCage').value || '').trim().toUpperCase();
   const br = (document.getElementById('saveBr').value || '').trim().toUpperCase();
   const tipo = document.getElementById('saveTipo').value;
