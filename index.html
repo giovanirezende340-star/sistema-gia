@@ -440,4 +440,2066 @@
                   <th>Pacotes</th>
                   <th>Tempo da Rota</th>
                   <th>Vs. Média</th>
-                  <th>F
+                  <th>Falt.</th>
+                  <th>Inc.</th>
+                </tr>
+              </thead>
+              <tbody id="mesa-rotas-feitas-tbody">
+                <tr><td colspan="6" style="color:var(--text-muted);">Nenhuma rota finalizada ainda neste turno.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 1. VISÃO GERAL ==================== -->
+      <section id="view-dashboard" class="view-section active">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="label">Total de Rotas (Gaiolas)</div>
+            <div class="val" id="kpi-rotas">0</div>
+            <div class="hint" id="kpi-rotas-sub">0 Passeio | 0 Utilitário</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Pacotes Normais (Azul)</div>
+            <div class="val c-blue" id="kpi-azuis">0</div>
+            <div class="hint">Fluxo padrão do romaneio</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Volumosos Originais (Amarelo)</div>
+            <div class="val c-yellow" id="kpi-amarelos">0</div>
+            <div class="hint">Coletados na triagem</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Volumosos Realocados (Vermelho)</div>
+            <div class="val c-red" id="kpi-vermelhos">0</div>
+            <div class="hint">Transferidos por excesso</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Rotas Validadas (Bloqueadas)</div>
+            <div class="val" id="kpi-validadas">0</div>
+            <div class="hint">Já saíram / finalizadas</div>
+          </div>
+        </div>
+
+        <div class="panel-box">
+          <div class="panel-title">
+            <span>⚠️ Alertas de Excesso em Carros de Passeio</span>
+            <button class="btn btn-primary btn-sm" onclick="irParaRotas()">Ver Todas as Rotas</button>
+          </div>
+          <div id="dashboard-alerts" style="color:var(--text-muted); font-size:13.5px;">
+            Importe o romaneio do dia ou carregue os dados de exemplo em <strong>Romaneio & Dados</strong> para iniciar.
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== 2. ROTAS & GAIOLAS ==================== -->
+      <section id="view-rotas" class="view-section">
+        <div class="panel-box">
+          <div class="panel-title">
+            <span>Rotas Separadas por Corridor/Cage (Ex: P-14)</span>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <input type="text" id="filter-rota-input" class="form-control" style="width:200px;" placeholder="Filtrar P-14, Rota 017..." oninput="renderRotas()" />
+              <select id="filter-status-aud" class="form-control" style="width:180px;" onchange="renderRotas()">
+                <option value="ALL">Todos os Status</option>
+                <option value="NOT_VALIDATED">Não Validado (Aberto)</option>
+                <option value="IN_PROGRESS">Em Andamento</option>
+                <option value="VALIDATED">Validado (Bloqueado)</option>
+              </select>
+            </div>
+          </div>
+          <div class="routes-grid" id="routes-grid"></div>
+        </div>
+      </section>
+
+      <!-- ==================== 3. RECEBIMENTO (META & RITMO) ==================== -->
+      <section id="view-recebimento" class="view-section">
+        <div class="panel-box">
+          <div class="panel-title">
+            <span>Progresso da Meta Diária de Recebimento</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label for="dailyGoalInput" style="font-size:12px; color:var(--text-muted);">Meta do Dia:</label>
+              <input type="number" id="dailyGoalInput" class="form-control" value="29000" min="1" step="100" style="width:130px;" />
+              <button class="btn btn-primary btn-sm" onclick="salvarMetaRecebimento()">Salvar Meta</button>
+            </div>
+          </div>
+          <div style="font-size:22px; font-weight:800;" id="recFraction">0 / 29.000</div>
+          <div class="progress-wrap"><div class="progress-bar" id="recProgressBar" style="width:0%;"></div></div>
+          <div style="display:flex; justify-content:space-between; font-size:13px;">
+            <span id="recPctText">0,00% concluído</span>
+            <span id="recRemainingText">Faltam 29.000 (100,00%)</span>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="label">Quantidade que Temos que Fazer</div>
+            <div class="val" id="kpiGoal">29.000</div>
+            <div class="hint">Meta programada</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Quantidade que Já Fizemos</div>
+            <div class="val c-blue" id="kpiDone">0</div>
+            <div class="hint" id="kpiDonePct">0,00% concluído</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Falta para Terminar</div>
+            <div class="val" style="color:var(--yellow-vol);" id="kpiLeft">29.000</div>
+            <div class="hint" id="kpiLeftPct">100,00% restante</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Ritmo Total / Hora</div>
+            <div class="val c-green" id="kpiTotalRate">0 /h</div>
+            <div class="hint" id="kpiEta">Previsão: --</div>
+          </div>
+        </div>
+
+        <div class="panel-box">
+          <div class="panel-title"><span>Produtividade Individual (Faixa Referência: 1.000 a 1.500 /h)</span></div>
+          <table>
+            <thead>
+              <tr>
+                <th>Operador (OPS)</th>
+                <th>Status</th>
+                <th>Bipados</th>
+                <th>Ritmo / Hora</th>
+                <th>Faixa</th>
+              </tr>
+            </thead>
+            <tbody id="recOperatorsBody">
+              <tr><td colspan="5" style="color:var(--text-muted);">Aguardando leitura da tela de Gestão de Recebimento pela extensão...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== 4. COLETA DE VOLUMOSOS ==================== -->
+      <section id="view-coleta" class="view-section">
+        <div class="panel-box">
+          <div class="panel-title"><span>Bipagem / Captura de Volumosos (Marcação Amarela na Rota Original)</span></div>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">
+            Os códigos capturados pela extensão Chrome no campo azul entram aqui automaticamente. Você também pode bipar manualmente abaixo:
+          </p>
+          <div style="display:flex; gap:10px; max-width:520px; margin-bottom:16px; flex-wrap:wrap;">
+            <input type="text" id="input-bip-volumoso" class="form-control" style="flex:1; min-width:220px;" placeholder="Bipe o SPX TN (ex: BR261948528714L)..." onkeydown="if(event.key==='Enter') registrarVolumosoManual()" />
+            <button class="btn btn-primary" onclick="registrarVolumosoManual()">Registrar Volumoso</button>
+          </div>
+          <div id="feedback-coleta" style="margin-bottom:14px; font-size:13.5px;"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>SPX TN</th>
+                <th>Corridor/Cage</th>
+                <th>Rota</th>
+                <th>Veículo</th>
+                <th>Status Auditoria</th>
+                <th>Horário / Operador</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-volumosos"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== 5. REALOCAR (NÃO COUBE) ==================== -->
+      <section id="view-realocar" class="view-section">
+        <div class="panel-box">
+          <div class="panel-title">
+            <span>Realocação Inteligente — Pacote que Não Coube no Veículo</span>
+            <span style="font-size:12px; color:var(--primary);">Raio de desvio configurado: <strong id="label-raio-atual">5 km</strong></span>
+          </div>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">
+            Bipe o <strong>SPX TN</strong> que não coube no carro. O <strong>G.ia</strong> ignora rotas <strong>Validadas (já saíram)</strong> e lista as melhores rotas abertas dentro do raio de desvio:
+          </p>
+          <div style="display:flex; gap:10px; max-width:560px; margin-bottom:16px; flex-wrap:wrap;">
+            <input type="text" id="input-bip-realocar" class="form-control" style="flex:1; min-width:220px;" placeholder="Bipe o SPX TN que não coube..." onkeydown="if(event.key==='Enter') buscarRotasAlternativas()" />
+            <button class="btn btn-primary" onclick="buscarRotasAlternativas()">Buscar Rotas</button>
+          </div>
+          <div id="realocar-origem-info"></div>
+          <div id="realocar-opcoes-lista"></div>
+        </div>
+      </section>
+
+      <!-- ==================== 6. SALVAMENTO / PDF ==================== -->
+      <section id="view-salvamento" class="view-section">
+        <div class="panel-box" style="max-width:720px;">
+          <div class="panel-title"><span>Estação de Salvamento — Leitor de Etiqueta / PDF (Elgin L420)</span></div>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;">
+            Envie o alerta diretamente para a Mesa (01 a 30), OPS ou Rota/Gaiola para disparar o som e o aviso na tela da mesa.
+          </p>
+          <input type="file" id="pdfFileInput" accept="application/pdf" class="form-control" style="margin-bottom:10px;" />
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:8px;">
+            <select id="saveMesa" class="form-control"></select>
+            <input id="saveOps" class="form-control" placeholder="OPS (opcional, ex: ops179126)" />
+            <input id="saveCage" class="form-control" placeholder="Gaiola/Rota (ex: G-24)" />
+            <input id="saveBr" class="form-control" placeholder="Código BR (ex: BR264511182145U)" />
+            <select id="saveTipo" class="form-control">
+              <option value="Salvamento de Erros">Salvamento de Erros</option>
+              <option value="Devolução">Devolução</option>
+            </select>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-primary" onclick="enviarAlertaSalvamento()">Enviar Notificação para a Mesa</button>
+          </div>
+          <div id="pdfExtractPreview" style="margin-top:10px; font-size:12.5px; color:var(--text-muted);"></div>
+        </div>
+      </section>
+
+      <!-- ==================== 7. MAPA ESTILO CIRCUIT ==================== -->
+      <section id="view-mapa" class="view-section">
+        <div class="panel-box">
+          <div class="panel-title">
+            <span>Mapa Operacional da Rota — <strong id="map-rota-titulo">Selecione uma rota</strong></span>
+            <select id="select-rota-mapa" class="form-control" style="width:240px;" onchange="carregarMapaRota(this.value)"></select>
+          </div>
+          <div class="legend-bar">
+            <div class="legend-item"><span class="dot-c" style="background:var(--blue-pkg);"></span> Pacote Normal (Romaneio)</div>
+            <div class="legend-item"><span class="dot-c" style="background:var(--yellow-vol);"></span> Volumoso Original da Rota</div>
+            <div class="legend-item"><span class="dot-c" style="background:var(--red-realoc);"></span> Volumoso Realocado (Transferido)</div>
+          </div>
+          <div id="map-container"></div>
+          <div id="map-packages-list" style="margin-top:16px;"></div>
+        </div>
+      </section>
+
+      <!-- ==================== 8. GESTÃO AUDITORIA, MESAS & FROTA ==================== -->
+      <section id="view-auditoria" class="view-section">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="label">Rotas que Temos que Fazer</div>
+            <div class="val" id="auditTotalRoutes">0</div>
+            <div class="hint" id="auditPageInfo">Paginação: 24 rotas/página</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Rotas Já Feitas</div>
+            <div class="val c-green" id="auditDoneRoutes">0</div>
+            <div class="hint">Validadas / concluídas</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Rotas que Faltam Fazer</div>
+            <div class="val" style="color:var(--yellow-vol);" id="auditLeftRoutes">0</div>
+            <div class="hint">Pendentes no turno</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Paginação Gestão de Auditoria</div>
+            <div style="margin-top:8px;">
+              <button class="btn btn-primary btn-sm" onclick="triggerNextAuditPage()">Avançar Próxima Página</button>
+            </div>
+            <div class="hint" id="auditCurrentPageBadge">Página atual: 1</div>
+          </div>
+        </div>
+
+        <div class="panel-box">
+          <div class="panel-title"><span>Quem Está Conferindo / Auditando e Pacotes Bipados</span></div>
+          <table>
+            <thead>
+              <tr>
+                <th>Conferente / Auditor (OPS)</th>
+                <th>Rota Atual</th>
+                <th>Rotas Feitas / Total</th>
+                <th>Pacotes Bipados</th>
+                <th>Status de Bipagem</th>
+              </tr>
+            </thead>
+            <tbody id="auditorsTableBody">
+              <tr><td colspan="5" style="color:var(--text-muted);">Aguardando leitura da Gestão de Auditoria / VT Detail...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel-box">
+          <div class="panel-title"><span>Lançar / Finalizar Rota na Mesa (01 a 30)</span></div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:8px;">
+            <select id="mMesa" class="form-control"></select>
+            <input id="mOps" class="form-control" placeholder="OPS (ex: ops179126)" />
+            <input id="mOperador" class="form-control" placeholder="Nome conferente" />
+            <input id="mRota" class="form-control" placeholder="Rota (ex: G-24)" />
+            <input id="mTotalPct" type="number" class="form-control" placeholder="Total pacotes" />
+            <input id="mDonePct" type="number" class="form-control" placeholder="Bipados" />
+            <input id="mFalt" type="number" class="form-control" placeholder="Faltantes" value="0" />
+            <input id="mInc" type="number" class="form-control" placeholder="Incorretos" value="0" />
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="upsertMesaRoute()">Iniciar / Atualizar Rota</button>
+            <button class="btn btn-success btn-sm" onclick="finalizarRotaMesa()">Finalizar Rota -> Espera Frota</button>
+          </div>
+          <div id="fleetSummary" style="margin-top:12px; font-size:13px; color:var(--text-muted);">Nenhuma mesa aguardando frota no momento.</div>
+        </div>
+
+        <div class="panel-box">
+          <div class="panel-title"><span>Status VT Detail por Rota / Gaiola</span></div>
+          <table>
+            <thead>
+              <tr>
+                <th>Corridor/Cage</th>
+                <th>AT/TO</th>
+                <th>Rota</th>
+                <th>Veículo</th>
+                <th>Status Auditoria</th>
+                <th>Alterar Manual (Teste)</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-auditoria"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== 9. LOGS ==================== -->
+      <section id="view-logs" class="view-section">
+        <div class="panel-box">
+          <div class="panel-title"><span>Log Auditável de Movimentações G.ia</span></div>
+          <table>
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Operador</th>
+                <th>Ação</th>
+                <th>SPX TN</th>
+                <th>Detalhes</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-logs"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== 10. IMPORTAR / EXPORTAR ROMANEIO ==================== -->
+      <section id="view-romaneio" class="view-section">
+        <div class="panel-box">
+          <div class="panel-title"><span>Importar Romaneio do Dia</span></div>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">
+            Compatível com as colunas: <code>Sequence, Stop, SPX TN, Zipcode, Destination Address, City, Neighborhood, Latitude, Longitude, Planned AT, Corridor Cage, Rota</code> (CSV, TSV ou Excel .xlsx).
+          </p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+            <input type="file" id="file-romaneio" accept=".csv,.txt,.xlsx,.xls" class="form-control" style="max-width:360px;" />
+            <button class="btn btn-primary" onclick="importarArquivoRomaneio()">Carregar Arquivo</button>
+            <button class="btn btn-secondary" onclick="carregarDadosExemplo()">Carregar Exemplo Teste</button>
+          </div>
+        </div>
+
+        <div class="panel-box">
+          <div class="panel-title"><span>Exportar Romaneio Consolidado do Dia</span></div>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">
+            Exporta a planilha completa com a classificação de cada pacote (Normal, Volumoso Original, Volumoso Realocado), rota original, rota final, tipo de veículo e assinatura do <strong>G.ia</strong>.
+          </p>
+          <button class="btn btn-primary" onclick="exportarRomaneioExcel()">Exportar Planilha Atualizada (.xlsx)</button>
+        </div>
+      </section>
+
+      <!-- ==================== 11. CONFIGURAÇÕES ==================== -->
+      <section id="view-config" class="view-section">
+        <div class="panel-box">
+          <div class="panel-title"><span>Regras Operacionais & Raio de Desvio</span></div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+            <div class="form-group">
+              <label>Raio Máximo de Desvio da Rota (km)</label>
+              <select id="cfg-raio" class="form-control">
+                <option value="5">5 km (Padrão)</option>
+                <option value="6">6 km</option>
+                <option value="8">8 km</option>
+                <option value="10">10 km</option>
+                <option value="15">15 km (Extremo)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Limite Volumosos — Carro de Passeio</label>
+              <input type="number" id="cfg-cap-passeio" class="form-control" value="2" min="1" max="20" />
+            </div>
+            <div class="form-group">
+              <label>Limite Volumosos — Utilitário</label>
+              <input type="number" id="cfg-cap-util" class="form-control" value="10" min="1" max="50" />
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-box">
+          <div class="panel-title"><span>Personalização White-Label (Identidade do Hub)</span></div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+            <div class="form-group">
+              <label>Nome do Sistema</label>
+              <input type="text" id="cfg-app-name" class="form-control" value="G.ia" />
+            </div>
+            <div class="form-group">
+              <label>Nome do Hub / Unidade</label>
+              <input type="text" id="cfg-hub-name" class="form-control" value="LM Hub_MS_Campo Grande" />
+            </div>
+            <div class="form-group">
+              <label>Cor Principal do Tema</label>
+              <input type="color" id="cfg-primary-color" class="form-control" style="height:42px; padding:4px;" value="#38bdf8" />
+            </div>
+            <div class="form-group">
+              <label>Logo Personalizada (Imagem)</label>
+              <input type="file" id="cfg-logo-file" accept="image/*" class="form-control" onchange="previewLogo(event)" />
+            </div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:10px;" onclick="salvarConfiguracoes()">Salvar Configurações</button>
+        </div>
+      </section>
+
+      <!-- ==================== 12. USUÁRIOS & ACESSOS ==================== -->
+      <section id="view-usuarios" class="view-section">
+        <div class="panel-box">
+          <div class="panel-title"><span>Controle de Acessos (Somente Administrador Cadastra)</span></div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:16px;">
+            <input type="text" id="new-user-id" class="form-control" placeholder="Matrícula / Login (ex: ops68103)" />
+            <input type="text" id="new-user-name" class="form-control" placeholder="Nome Completo" />
+            <input type="password" id="new-user-pass" class="form-control" placeholder="Senha" />
+            <select id="new-user-role" class="form-control">
+              <option value="OPERADOR">Operador</option>
+              <option value="ADMIN">Administrador</option>
+            </select>
+            <button class="btn btn-primary" onclick="criarUsuario()">Criar Acesso</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Login / Matrícula</th>
+                <th>Nome</th>
+                <th>Perfil</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-usuarios"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 1. ANIMAÇÃO REDE NEURAL IA (BRANCO NEON + AZUL CIANO) ================= */
+(function initLoginAmbientCanvas() {
+  const canvas = document.getElementById('neural-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  let width = 0;
+  let height = 0;
+  let roads = [];
+  let walkers = [];
+  let pulses = [];
+  let lastPulseSpawn = 0;
+  let animationFrameId = null;
+
+  function resizeCanvas() {
+    const loginScreen = document.getElementById('login-screen');
+    if (!loginScreen || getComputedStyle(loginScreen).display === 'none') return;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    buildCityStyleRoads();
+  }
+
+  function sampleSmoothCurve(controlPts, stepsPerSeg = 14) {
+    const out = [];
+    for (let i = 0; i < controlPts.length - 1; i++) {
+      const p0 = controlPts[Math.max(0, i - 1)];
+      const p1 = controlPts[i];
+      const p2 = controlPts[i + 1];
+      const p3 = controlPts[Math.min(controlPts.length - 1, i + 2)];
+
+      for (let s = 0; s < stepsPerSeg; s++) {
+        const t = s / stepsPerSeg;
+        const t2 = t * t;
+        const t3 = t2 * t;
+
+        const x =
+          0.5 *
+          (2 * p1.x +
+            (-p0.x + p2.x) * t +
+            (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+            (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+        const y =
+          0.5 *
+          (2 * p1.y +
+            (-p0.y + p2.y) * t +
+            (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+            (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+        out.push({ x, y });
+      }
+    }
+    out.push({ ...controlPts[controlPts.length - 1] });
+
+    const cumLen = [0];
+    let totalLen = 0;
+    for (let i = 1; i < out.length; i++) {
+      totalLen += Math.hypot(out[i].x - out[i - 1].x, out[i].y - out[i - 1].y);
+      cumLen.push(totalLen);
+    }
+    return { pts: out, cumLen, totalLen: Math.max(totalLen, 1) };
+  }
+
+  function getPointAtProgress(road, u) {
+    const target = Math.max(0, Math.min(1, u)) * road.totalLen;
+    const { pts, cumLen } = road;
+    for (let i = 1; i < cumLen.length; i++) {
+      if (cumLen[i] >= target) {
+        const prev = cumLen[i - 1];
+        const segLen = Math.max(cumLen[i] - prev, 0.0001);
+        const f = (target - prev) / segLen;
+        return {
+          x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * f,
+          y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * f
+        };
+      }
+    }
+    return pts[pts.length - 1];
+  }
+
+  function buildCityStyleRoads() {
+    const w = width || 1280;
+    const h = height || 720;
+    const cx = w * 0.5;
+    const cy = h * 0.48;
+
+    const specs = [
+      [{ x: -0.05 * w, y: 0.14 * h }, { x: 0.22 * w, y: 0.18 * h }, { x: 0.52 * w, y: 0.12 * h }, { x: 0.80 * w, y: 0.20 * h }, { x: 1.05 * w, y: 0.15 * h }],
+      [{ x: -0.05 * w, y: 0.42 * h }, { x: 0.25 * w, y: 0.36 * h }, { x: 0.50 * w, y: 0.44 * h }, { x: 0.76 * w, y: 0.38 * h }, { x: 1.05 * w, y: 0.43 * h }],
+      [{ x: -0.05 * w, y: 0.72 * h }, { x: 0.24 * w, y: 0.78 * h }, { x: 0.54 * w, y: 0.69 * h }, { x: 0.82 * w, y: 0.76 * h }, { x: 1.05 * w, y: 0.71 * h }],
+      [{ x: 0.14 * w, y: -0.05 * h }, { x: 0.18 * w, y: 0.24 * h }, { x: 0.13 * w, y: 0.54 * h }, { x: 0.19 * w, y: 0.80 * h }, { x: 0.15 * w, y: 1.05 * h }],
+      [{ x: 0.38 * w, y: -0.05 * h }, { x: 0.34 * w, y: 0.28 * h }, { x: 0.41 * w, y: 0.56 * h }, { x: 0.36 * w, y: 0.82 * h }, { x: 0.39 * w, y: 1.05 * h }],
+      [{ x: 0.64 * w, y: -0.05 * h }, { x: 0.68 * w, y: 0.26 * h }, { x: 0.62 * w, y: 0.55 * h }, { x: 0.67 * w, y: 0.81 * h }, { x: 0.65 * w, y: 1.05 * h }],
+      [{ x: 0.86 * w, y: -0.05 * h }, { x: 0.82 * w, y: 0.25 * h }, { x: 0.88 * w, y: 0.54 * h }, { x: 0.83 * w, y: 0.80 * h }, { x: 0.86 * w, y: 1.05 * h }],
+      [{ x: -0.05 * w, y: 0.88 * h }, { x: 0.24 * w, y: 0.64 * h }, { x: cx, y: cy }, { x: 0.76 * w, y: 0.30 * h }, { x: 1.05 * w, y: 0.08 * h }],
+      [{ x: -0.05 * w, y: 0.10 * h }, { x: 0.26 * w, y: 0.30 * h }, { x: cx, y: cy }, { x: 0.74 * w, y: 0.66 * h }, { x: 1.05 * w, y: 0.88 * h }]
+    ];
+
+    roads = specs.map((pts, idx) => ({ id: idx, ...sampleSmoothCurve(pts, 14) }));
+    walkers = [];
+    const perRoad = Math.max(4, Math.min(8, Math.floor((w * h) / 140000)));
+    roads.forEach((road, rIdx) => {
+      for (let i = 0; i < perRoad; i++) {
+        walkers.push({
+          roadIdx: rIdx,
+          u: (i + 0.25) / perRoad,
+          dir: (i + rIdx) % 2 === 0 ? 1 : -1,
+          speed: 0.025 + ((i * 7 + rIdx * 13) % 10) * 0.0028,
+          radius: i % 3 === 0 ? 2.6 : 1.9,
+          isWhiteCore: i % 2 === 0
+        });
+      }
+    });
+    pulses = [];
+  }
+
+  function spawnPulse(now) {
+    if (!roads.length || pulses.length >= 16) return;
+    const roadIdx = Math.floor(Math.random() * roads.length);
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    pulses.push({
+      roadIdx,
+      dir,
+      u: dir === 1 ? 0 : 1,
+      speed: 0.16 + Math.random() * 0.09,
+      born: now,
+      maxAge: 7500
+    });
+  }
+
+  function drawBackground(now) {
+    const w = width || 1280;
+    const h = height || 720;
+    const bg = ctx.createRadialGradient(w * 0.5, h * 0.48, 20, w * 0.5, h * 0.48, Math.max(w, h) * 0.72);
+    bg.addColorStop(0, '#0d1934');
+    bg.addColorStop(0.55, '#070d1d');
+    bg.addColorStop(1, '#03060e');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    for (const road of roads) {
+      if (!road.pts.length) continue;
+      ctx.beginPath();
+      ctx.moveTo(road.pts[0].x, road.pts[0].y);
+      for (let i = 1; i < road.pts.length; i++) ctx.lineTo(road.pts[i].x, road.pts[i].y);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.13)';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(road.pts[0].x, road.pts[0].y);
+      for (let i = 1; i < road.pts.length; i++) ctx.lineTo(road.pts[i].x, road.pts[i].y);
+      ctx.strokeStyle = 'rgba(224, 242, 254, 0.08)';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+
+    const pulseWave = 0.75 + 0.25 * Math.sin(now * 0.0022);
+    for (let i = walkers.length - 1; i >= 0; i--) {
+      const wk = walkers[i];
+      const road = roads[wk.roadIdx];
+      if (!road) continue;
+      wk.u += wk.dir * wk.speed * 0.016;
+      if (wk.u > 1.02 || wk.u < -0.02) {
+        walkers.splice(i, 1);
+        continue;
+      }
+      const pos = getPointAtProgress(road, Math.max(0, Math.min(1, wk.u)));
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, wk.radius * 3.2, 0, Math.PI * 2);
+      ctx.fillStyle = wk.isWhiteCore
+        ? `rgba(224, 242, 254, ${0.14 * pulseWave})`
+        : `rgba(56, 189, 248, ${0.18 * pulseWave})`;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, wk.radius, 0, Math.PI * 2);
+      ctx.fillStyle = wk.isWhiteCore ? '#f0f9ff' : '#38bdf8';
+      ctx.fill();
+    }
+
+    while (walkers.length < Math.max(24, roads.length * 4)) {
+      const rIdx = Math.floor(Math.random() * roads.length);
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      walkers.push({
+        roadIdx: rIdx,
+        u: dir === 1 ? 0 : 1,
+        dir,
+        speed: 0.025 + Math.random() * 0.025,
+        radius: 1.9 + Math.random() * 0.9,
+        isWhiteCore: Math.random() < 0.5
+      });
+    }
+
+    for (let i = pulses.length - 1; i >= 0; i--) {
+      const p = pulses[i];
+      const road = roads[p.roadIdx];
+      const age = now - p.born;
+      if (!road || age > p.maxAge) {
+        pulses.splice(i, 1);
+        continue;
+      }
+      p.u += p.dir * p.speed * 0.016;
+      if (p.u > 1.05 || p.u < -0.05) {
+        pulses.splice(i, 1);
+        continue;
+      }
+      const head = getPointAtProgress(road, Math.max(0, Math.min(1, p.u)));
+      const tail = getPointAtProgress(road, Math.max(0, Math.min(1, p.u - p.dir * 0.12)));
+      const fade = Math.min(1, age / 250) * Math.min(1, (p.maxAge - age) / 400);
+
+      const grad = ctx.createLinearGradient(tail.x, tail.y, head.x, head.y);
+      grad.addColorStop(0, 'rgba(56, 189, 248, 0)');
+      grad.addColorStop(0.65, `rgba(56, 189, 248, ${0.55 * fade})`);
+      grad.addColorStop(1, `rgba(255, 255, 255, ${0.95 * fade})`);
+
+      ctx.beginPath();
+      ctx.moveTo(tail.x, tail.y);
+      ctx.lineTo(head.x, head.y);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(head.x, head.y, 3.2, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.95 * fade})`;
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function loop(now) {
+    const loginScreen = document.getElementById('login-screen');
+    if (loginScreen && getComputedStyle(loginScreen).display === 'none') {
+      animationFrameId = null;
+      return;
+    }
+    if (!width || !height) resizeCanvas();
+    if (now - lastPulseSpawn > 650) {
+      spawnPulse(now);
+      lastPulseSpawn = now;
+    }
+    drawBackground(now);
+    animationFrameId = requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+  animationFrameId = requestAnimationFrame(loop);
+})();
+
+/* ================= 2. ESTADO GLOBAL & PERSISTÊNCIA ================= */
+const DB_KEY = 'GIA_ENTERPRISE_DB_V2';
+const SESSION_KEY = 'GIA_SESSION_V2';
+const MESA_SESSION_KEY = 'GIA_MESA_SESSION_V1';
+const BASE_DOC_TITLE = 'G.ia — Gestão Inteligente de Alocação & Operação';
+
+const defaultDB = {
+  config: {
+    appName: 'G.ia',
+    hubName: 'LM Hub_MS_Campo Grande',
+    primaryColor: '#38bdf8',
+    logoDataUrl: '',
+    raioKm: 5,
+    capPasseio: 2,
+    capUtil: 10,
+    dailyGoal: 29000
+  },
+  users: [
+    { id: 'admin', name: 'Administrador do Hub', pass: '1234', role: 'ADMIN' },
+    { id: 'ops68103', name: 'Conferente Triagem', pass: '1234', role: 'OPERADOR' }
+  ],
+  rotas: [],
+  pacotes: [],
+  logs: [],
+  receive: {
+    totalRecebido: 0,
+    totalPorHoraTodos: 0,
+    operators: []
+  },
+  auditStats: {
+    pageNum: 1,
+    perPageDetected: 24,
+    totalRoutesExpected: 0,
+    completedRoutesCount: 0,
+    remainingRoutesCount: 0,
+    byAuditor: []
+  },
+  mesasAtivas: [],
+  historicoRotasMesa: [],
+  alertasSalvamento: []
+};
+
+let db = loadDB();
+let currentUser = null;
+let mesaSession = loadMesaSession();
+let isMesaMode = new URLSearchParams(window.location.search).get('modo') === 'mesa';
+let mapInstance = null;
+let mapLayerGroup = null;
+let knownAlertIds = new Set();
+let mesaBlinkTimer = null;
+let mesaBlinkFlip = false;
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (!raw) return structuredClone(defaultDB);
+    const parsed = JSON.parse(raw);
+    return {
+      ...structuredClone(defaultDB),
+      ...parsed,
+      config: { ...structuredClone(defaultDB.config), ...(parsed.config || {}) },
+      receive: { ...structuredClone(defaultDB.receive), ...(parsed.receive || {}) },
+      auditStats: { ...structuredClone(defaultDB.auditStats), ...(parsed.auditStats || {}) }
+    };
+  } catch {
+    return structuredClone(defaultDB);
+  }
+}
+
+function saveDB(syncToExtension = true) {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  if (syncToExtension) {
+    window.postMessage({
+      source: 'GIA_WEB_APP',
+      type: 'SAVE_SHARED_PATCH',
+      patch: {
+        webState: {
+          dailyGoal: db.config.dailyGoal,
+          mesas: db.mesasAtivas,
+          routeHistory: db.historicoRotasMesa,
+          alerts: db.alertasSalvamento
+        }
+      }
+    }, '*');
+  }
+}
+
+function loadMesaSession() {
+  try {
+    return JSON.parse(localStorage.getItem(MESA_SESSION_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function registrarLog(acao, spxTn, detalhes) {
+  db.logs.unshift({
+    dataHora: new Date().toLocaleString('pt-BR'),
+    operador: mesaSession ? `${mesaSession.mesa} (${mesaSession.ops})` : (currentUser ? `${currentUser.id} (${currentUser.name})` : 'Sistema'),
+    acao,
+    spxTn: spxTn || '-',
+    detalhes
+  });
+  if (db.logs.length > 500) db.logs.pop();
+  saveDB(false);
+}
+
+function formatDuration(sec) {
+  const s = Math.max(0, Math.floor(Number(sec) || 0));
+  const min = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${min}min ${String(rem).padStart(2, '0')}s`;
+}
+
+function fmtNum(n) {
+  return Number(n || 0).toLocaleString('pt-BR');
+}
+
+function populateMesaSelects() {
+  const opts = Array.from({ length: 30 }, (_, i) => {
+    const num = String(i + 1).padStart(2, '0');
+    return `<option value="Mesa ${num}">Mesa ${num}</option>`;
+  }).join('');
+
+  const s1 = document.getElementById('mesa-select-login');
+  const s2 = document.getElementById('mMesa');
+  const s3 = document.getElementById('saveMesa');
+  if (s1) s1.innerHTML = `<option value="">Selecione a Mesa (01 a 30)...</option>` + opts;
+  if (s2) s2.innerHTML = opts;
+  if (s3) s3.innerHTML = `<option value="">Por Rota / OPS</option>` + opts;
+}
+
+/* ================= 3. LOGIN & PERMISSÕES ================= */
+function fazerLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  const found = db.users.find((x) => x.id.toLowerCase() === u.toLowerCase() && x.pass === p);
+  if (!found) {
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+  document.getElementById('login-error').style.display = 'none';
+  currentUser = found;
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(found));
+  registrarLog('LOGIN', '-', 'Acesso ao painel G.ia');
+  iniciarApp();
+}
+
+function sair() {
+  sessionStorage.removeItem(SESSION_KEY);
+  currentUser = null;
+  stopMesaBlink();
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function iniciarApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'grid';
+  document.getElementById('current-user-label').textContent = `${currentUser.name} [${currentUser.role}]`;
+  document.getElementById('menu-users-btn').style.display = currentUser.role === 'ADMIN' ? 'block' : 'none';
+  aplicarIdentidadeVisual();
+  popularMesaSelects();
+  applyMesaModeLayout();
+  renderAll();
+  requestSync();
+}
+
+function applyMesaModeLayout() {
+  const shell = document.getElementById('app-shell');
+  const sidebar = document.getElementById('mainSidebar');
+  const btnLogout = document.getElementById('btn-logout');
+  const btnMesa = document.getElementById('btn-toggle-mesa');
+
+  if (isMesaMode) {
+    shell.classList.add('mesa-only');
+    sidebar.classList.add('hidden');
+    btnLogout.classList.add('hidden');
+    btnMesa.textContent = 'Sair do Modo Mesa';
+    document.querySelectorAll('.view-section').forEach((s) => s.classList.remove('active'));
+    document.getElementById('view-mesa-terminal').classList.add('active');
+    document.getElementById('breadcrumb-text').textContent = 'Terminal da Mesa';
+    renderMesaTerminal();
+  } else {
+    shell.classList.remove('mesa-only');
+    sidebar.classList.remove('hidden');
+    btnLogout.classList.remove('hidden');
+    btnMesa.textContent = 'Modo Operador (Mesa)';
+    stopMesaBlink();
+    const activeNav = document.querySelector('.nav-item.active');
+    if (activeNav) activeNav.click();
+    else openView('view-dashboard', 'Torre de Controle / Visão Geral');
+  }
+}
+
+function toggleOperatorMode() {
+  isMesaMode = !isMesaMode;
+  applyMesaModeLayout();
+}
+
+/* ================= 4. TERMINAL DA MESA (01 A 30 + OPS) ================= */
+function entrarNaMesa() {
+  const mesa = document.getElementById('mesa-select-login').value.trim();
+  const ops = document.getElementById('mesa-ops-login').value.trim().toLowerCase();
+  if (!mesa || !ops) {
+    alert('Selecione a Mesa (01 a 30) e informe seu OPS.');
+    return;
+  }
+  mesaSession = { mesa, ops };
+  localStorage.setItem(MESA_SESSION_KEY, JSON.stringify(mesaSession));
+  playAlertSound();
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  renderMesaTerminal();
+}
+
+function sairDaMesa() {
+  mesaSession = null;
+  localStorage.removeItem(MESA_SESSION_KEY);
+  stopMesaBlink();
+  renderMesaTerminal();
+}
+
+function stopMesaBlink() {
+  if (mesaBlinkTimer) {
+    clearInterval(mesaBlinkTimer);
+    mesaBlinkTimer = null;
+  }
+  document.title = BASE_DOC_TITLE;
+}
+
+function updateMesaBlink(alerts) {
+  if (!isMesaMode || !mesaSession || !alerts.length) {
+    stopMesaBlink();
+    return;
+  }
+  if (!mesaBlinkTimer) {
+    mesaBlinkTimer = setInterval(() => {
+      mesaBlinkFlip = !mesaBlinkFlip;
+      const topAlert = alerts[0];
+      document.title = mesaBlinkFlip
+        ? `🚨 (${alerts.length}) SALVAMENTO - Rota ${topAlert.cage}!`
+        : `⚠️ BUSCAR NO SALVAMENTO (${mesaSession.mesa})`;
+    }, 750);
+  }
+}
+
+function playAlertSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioCtx();
+    [880, 1174.66].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + idx * 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.18 + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.18);
+      osc.stop(ctx.currentTime + idx * 0.18 + 0.17);
+    });
+  } catch {}
+}
+
+function getAlertsForCurrentMesa() {
+  if (!mesaSession) return [];
+  const myMesa = mesaSession.mesa.toLowerCase();
+  const myOps = mesaSession.ops.toLowerCase();
+  const rotaAtual = db.mesasAtivas.find(
+    (m) => m.status === 'EM_ROTA' && (m.mesa.toLowerCase() === myMesa || m.ops.toLowerCase() === myOps)
+  );
+  const myRota = rotaAtual ? rotaAtual.rota.toUpperCase() : '';
+
+  return (db.alertasSalvamento || []).filter((a) => {
+    if (a.pickedUp) return false;
+    const byMesa = a.mesa && a.mesa.toLowerCase() === myMesa;
+    const byOps = a.ops && a.ops.toLowerCase() === myOps;
+    const byRota = myRota && a.cage && a.cage.toUpperCase() === myRota;
+    return byMesa || byOps || byRota;
+  });
+}
+
+function marcarAlertaRetirado(id) {
+  const item = (db.alertasSalvamento || []).find((a) => a.id === id);
+  if (item) {
+    item.pickedUp = true;
+    saveDB(true);
+    renderMesaTerminal();
+  }
+}
+
+function renderMesaTerminal() {
+  const loginBox = document.getElementById('mesa-login-box');
+  const activePanel = document.getElementById('mesa-active-panel');
+  if (!mesaSession) {
+    loginBox.classList.remove('hidden');
+    activePanel.classList.add('hidden');
+    stopMesaBlink();
+    return;
+  }
+
+  loginBox.classList.add('hidden');
+  activePanel.classList.remove('hidden');
+  document.getElementById('mesa-header-info').textContent = `${mesaSession.mesa} · ${mesaSession.ops}`;
+
+  const now = Date.now();
+  const myAlerts = getAlertsForCurrentMesa();
+
+  let hasNewAlert = false;
+  for (const a of myAlerts) {
+    if (!knownAlertIds.has(a.id)) {
+      knownAlertIds.add(a.id);
+      hasNewAlert = true;
+    }
+  }
+  if (hasNewAlert) {
+    playAlertSound();
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(`Salvamento — Rota ${myAlerts[0].cage}`, {
+        body: `Pacote ${myAlerts[0].br} aguardando na Estação de Salvamento.`
+      });
+    }
+  }
+  updateMesaBlink(myAlerts);
+
+  document.getElementById('mesa-kpi-alertas').textContent = fmtNum(myAlerts.length);
+
+  const notifEl = document.getElementById('mesa-notificacoes-lista');
+  notifEl.innerHTML = myAlerts.length
+    ? myAlerts.map((a) => `
+        <div class="alert-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div>
+              <span class="badge badge-bad">${a.tipo}</span>
+              <strong style="font-size:15px; margin-left:6px;">Rota ${a.cage}: 1 pacote</strong>
+            </div>
+            <button class="btn btn-success btn-sm" onclick="marcarAlertaRetirado('${a.id}')">Já retirei</button>
+          </div>
+          <div style="font-size:12.5px; color:var(--text-muted); margin-top:6px;">
+            Buscar na Estação de Salvamento · aguardando há <strong>${formatDuration((now - a.createdAt) / 1000)}</strong>
+          </div>
+          <div style="margin-top:4px; color:var(--primary); font-weight:700;">${a.br}</div>
+        </div>
+      `).join('')
+    : `<div style="color:var(--text-muted); font-size:13px;">Nenhum pacote aguardando retirada para a sua rota no momento.</div>`;
+
+  const currentRoute = db.mesasAtivas.find(
+    (m) =>
+      m.status === 'EM_ROTA' &&
+      (m.mesa.toLowerCase() === mesaSession.mesa.toLowerCase() ||
+        m.ops.toLowerCase() === mesaSession.ops.toLowerCase())
+  );
+
+  const curEl = document.getElementById('mesa-rota-atual');
+  if (currentRoute) {
+    const pct = Math.min(100, Math.round((currentRoute.done / Math.max(1, currentRoute.total)) * 100));
+    const elapsedSec = (now - (currentRoute.routeStartTs || now)) / 1000;
+    curEl.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <strong style="font-size:18px;">Rota ${currentRoute.rota}</strong>
+        <span class="badge badge-not-val">Tempo atual: ${formatDuration(elapsedSec)}</span>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;"></div></div>
+      <div style="display:flex; justify-content:space-between; font-size:13px; flex-wrap:wrap; gap:8px;">
+        <span>Pacotes: <strong>${currentRoute.done}/${currentRoute.total}</strong> (${pct}%)</span>
+        <span>Faltantes: <strong>${currentRoute.falt}</strong> · Incorretos: <strong>${currentRoute.inc}</strong></span>
+      </div>
+    `;
+  } else {
+    curEl.innerHTML = `<div style="color:var(--text-muted); font-size:13px;">Nenhuma rota em andamento para a sua mesa neste momento.</div>`;
+  }
+
+  const minhasFeitas = (db.historicoRotasMesa || []).filter(
+    (h) =>
+      (h.ops && h.ops.toLowerCase() === mesaSession.ops.toLowerCase()) ||
+      (h.mesa && h.mesa.toLowerCase() === mesaSession.mesa.toLowerCase())
+  );
+
+  const countFeitas = minhasFeitas.length;
+  const totalSecFeitas = minhasFeitas.reduce((acc, item) => acc + (Number(item.durationSec) || 0), 0);
+  const avgSec = countFeitas > 0 ? totalSecFeitas / countFeitas : 0;
+  const avgFormatted = formatDuration(avgSec);
+
+  document.getElementById('mesa-kpi-feitas').textContent = fmtNum(countFeitas);
+  document.getElementById('mesa-kpi-media').textContent = avgFormatted;
+  document.getElementById('mesa-kpi-media-sub').textContent =
+    countFeitas > 0 ? `${countFeitas} rota(s) no turno` : 'Aguardando finalizar rota';
+  document.getElementById('mesa-resumo-media-inline').textContent =
+    `Tempo médio: ${avgFormatted} por rota (${countFeitas} rota${countFeitas === 1 ? '' : 's'})`;
+
+  const tbodyFeitas = document.getElementById('mesa-rotas-feitas-tbody');
+  tbodyFeitas.innerHTML = minhasFeitas.length
+    ? minhasFeitas.map((h) => {
+        const diffSec = Math.round((Number(h.durationSec) || 0) - avgSec);
+        const diffLabel = countFeitas <= 1
+          ? '<span class="badge badge-validated">Primeira rota</span>'
+          : diffSec <= 0
+            ? `<span class="badge badge-not-val">${Math.abs(diffSec)}s abaixo da média</span>`
+            : `<span class="badge badge-progress">+${diffSec}s acima da média</span>`;
+        return `
+          <tr>
+            <td><strong>${h.rota}</strong></td>
+            <td>${h.done}/${h.total}</td>
+            <td><strong>${formatDuration(h.durationSec)}</strong></td>
+            <td>${diffLabel}</td>
+            <td>${h.falt}</td>
+            <td>${h.inc}</td>
+          </tr>
+        `;
+      }).join('')
+    : `<tr><td colspan="6" style="color:var(--text-muted);">Nenhuma rota finalizada ainda neste turno.</td></tr>`;
+}
+
+/* ================= 5. NAVEGAÇÃO & VISUAL ================= */
+function toggleSub(btn) {
+  btn.classList.toggle('active');
+  const sub = btn.nextElementSibling;
+  if (sub) sub.classList.toggle('collapsed');
+}
+
+function openView(viewId, breadcrumb, el) {
+  isMesaMode = false;
+  document.getElementById('app-shell').classList.remove('mesa-only');
+  document.getElementById('mainSidebar').classList.remove('hidden');
+  document.getElementById('btn-logout').classList.remove('hidden');
+  document.getElementById('btn-toggle-mesa').textContent = 'Modo Operador (Mesa)';
+  stopMesaBlink();
+
+  document.querySelectorAll('.view-section').forEach((s) => s.classList.remove('active'));
+  const target = document.getElementById(viewId);
+  if (target) target.classList.add('active');
+  if (breadcrumb) document.getElementById('breadcrumb-text').textContent = breadcrumb;
+
+  if (el) {
+    document.querySelectorAll('.nav-item').forEach((n) => n.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  if (viewId === 'view-mapa') {
+    popularSelectMapa();
+    const sel = document.getElementById('select-rota-mapa');
+    if (sel.value) carregarMapaRota(sel.value);
+  }
+  if (viewId === 'view-usuarios') renderUsuarios();
+  if (viewId === 'view-logs') renderLogs();
+  if (viewId === 'view-auditoria') renderAuditoria();
+  if (viewId === 'view-recebimento') renderRecebimento();
+}
+
+function irParaRotas() {
+  const navRotas = Array.from(document.querySelectorAll('.nav-item')).find((b) => b.textContent.includes('Rotas & Gaiolas'));
+  openView('view-rotas', 'Torre de Controle / Rotas & Gaiolas', navRotas);
+}
+
+function aplicarIdentidadeVisual() {
+  const { appName, hubName, primaryColor, logoDataUrl, raioKm } = db.config;
+  document.documentElement.style.setProperty('--primary', primaryColor);
+  document.getElementById('sidebar-app-name').textContent = appName;
+  document.getElementById('display-hub-name').textContent = hubName;
+  document.getElementById('ext-status-text').textContent = `Raio: ${raioKm} km | Auditoria Ativa`;
+  document.getElementById('label-raio-atual').textContent = `${raioKm} km`;
+
+  const loginLogo = document.getElementById('login-logo-box');
+  const sideLogo = document.getElementById('sidebar-logo');
+  if (logoDataUrl) {
+    loginLogo.innerHTML = `<img src="${logoDataUrl}" alt="Logo" />`;
+    sideLogo.innerHTML = `<img src="${logoDataUrl}" alt="Logo" />`;
+  } else {
+    const shortName = appName.slice(0, 4).toUpperCase();
+    loginLogo.textContent = shortName;
+    sideLogo.textContent = shortName;
+  }
+}
+
+/* ================= 6. GEO, ROTAS & ALOCAÇÃO DE VOLUMOSOS ================= */
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getLimiteVolumosos(vehicleType) {
+  return vehicleType === 'PASSEIO' ? Number(db.config.capPasseio || 2) : Number(db.config.capUtil || 10);
+}
+
+function contarVolumososRota(cageCode) {
+  let originais = 0;
+  let realocados = 0;
+  for (const p of db.pacotes) {
+    if (p.rotaAtual === cageCode) {
+      if (p.tipo === 'VOLUMOSO_ORIGINAL') originais++;
+      if (p.tipo === 'VOLUMOSO_REALOCADO') realocados++;
+    }
+  }
+  return { originais, realocados, totalVol: originais + realocados };
+}
+
+function contarNormaisRota(cageCode) {
+  return db.pacotes.filter((p) => p.rotaAtual === cageCode && p.tipo === 'NORMAL').length;
+}
+
+function badgeAuditoria(status) {
+  if (status === 'VALIDATED') return `<span class="badge badge-validated">Validado (Bloqueado)</span>`;
+  if (status === 'IN_PROGRESS') return `<span class="badge badge-progress">Em Andamento</span>`;
+  return `<span class="badge badge-not-val">Não Validado</span>`;
+}
+
+function badgeVeiculo(v) {
+  return v === 'PASSEIO'
+    ? `<span class="badge badge-passeio">Passeio</span>`
+    : `<span class="badge badge-util">Utilitário</span>`;
+}
+
+function renderDashboard() {
+  const totalRotas = db.rotas.length;
+  const passeioCount = db.rotas.filter((r) => r.vehicleType === 'PASSEIO').length;
+  const utilCount = totalRotas - passeioCount;
+  const azuis = db.pacotes.filter((p) => p.tipo === 'NORMAL').length;
+  const amarelos = db.pacotes.filter((p) => p.tipo === 'VOLUMOSO_ORIGINAL').length;
+  const vermelhos = db.pacotes.filter((p) => p.tipo === 'VOLUMOSO_REALOCADO').length;
+  const validadas = db.rotas.filter((r) => r.auditStatus === 'VALIDATED').length;
+
+  document.getElementById('kpi-rotas').textContent = totalRotas;
+  document.getElementById('kpi-rotas-sub').textContent = `${passeioCount} Passeio | ${utilCount} Utilitário`;
+  document.getElementById('kpi-azuis').textContent = azuis;
+  document.getElementById('kpi-amarelos').textContent = amarelos;
+  document.getElementById('kpi-vermelhos').textContent = vermelhos;
+  document.getElementById('kpi-validadas').textContent = validadas;
+
+  const alertas = [];
+  for (const r of db.rotas) {
+    const c = contarVolumososRota(r.cage);
+    const lim = getLimiteVolumosos(r.vehicleType);
+    if (r.vehicleType === 'PASSEIO' && c.totalVol > lim) {
+      alertas.push(`<li><strong>${r.cage}</strong> (${r.rota}) — Carro de Passeio com <strong>${c.totalVol}</strong> volumosos (limite recomendado: ${lim}).</li>`);
+    }
+  }
+  const alertBox = document.getElementById('dashboard-alerts');
+  if (alertas.length) {
+    alertBox.innerHTML = `<ul style="padding-left:18px; line-height:1.8; color:#fca5a5;">${alertas.join('')}</ul>`;
+  } else if (totalRotas > 0) {
+    alertBox.innerHTML = `<span style="color:#34d399;">✓ Nenhum carro de passeio acima do limite de volumosos no momento.</span>`;
+  }
+}
+
+function renderRotas() {
+  const grid = document.getElementById('routes-grid');
+  const q = (document.getElementById('filter-rota-input')?.value || '').trim().toLowerCase();
+  const st = document.getElementById('filter-status-aud')?.value || 'ALL';
+
+  const filtradas = db.rotas.filter((r) => {
+    const matchText = !q || r.cage.toLowerCase().includes(q) || r.rota.toLowerCase().includes(q) || r.at.toLowerCase().includes(q);
+    const matchSt = st === 'ALL' || r.auditStatus === st;
+    return matchText && matchSt;
+  });
+
+  if (!filtradas.length) {
+    grid.innerHTML = `<div style="color:var(--text-muted); font-size:13.5px;">Nenhuma rota encontrada. Importe o romaneio ou carregue o exemplo em <strong>Romaneio & Dados</strong>.</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtradas.map((r) => {
+    const normais = contarNormaisRota(r.cage);
+    const vol = contarVolumososRota(r.cage);
+    const lim = getLimiteVolumosos(r.vehicleType);
+    const isLocked = r.auditStatus === 'VALIDATED';
+    const excesso = r.vehicleType === 'PASSEIO' && vol.totalVol > lim;
+
+    return `
+      <div class="route-card ${isLocked ? 'locked' : ''}" style="${excesso ? 'border-color:#ef4444;' : ''}">
+        <div class="route-top">
+          <div>
+            <div class="cage-code">${r.cage}</div>
+            <div class="rota-sub">${r.rota} · ${r.at}</div>
+          </div>
+          <div style="text-align:right;">
+            ${badgeVeiculo(r.vehicleType)}<br/>
+            <div style="margin-top:4px;">${badgeAuditoria(r.auditStatus)}</div>
+          </div>
+        </div>
+
+        <div class="pkg-counters">
+          <div><span>Normal</span><strong class="c-blue">${normais}</strong></div>
+          <div><span>Vol. Orig.</span><strong class="c-yellow">${vol.originais}</strong></div>
+          <div><span>Realocado</span><strong class="c-red">${vol.realocados}</strong></div>
+        </div>
+
+        <div style="font-size:11.5px; color:var(--text-muted); margin-bottom:10px;">
+          Capacidade ref.: ${vol.totalVol}/${lim} vol. ${excesso ? '<span style="color:#f87171; font-weight:700;">(EXCESSO)</span>' : ''}
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+          <button class="btn btn-secondary btn-sm" onclick="abrirRotaNoMapa('${r.cage}')">Ver no Mapa</button>
+          <select class="form-control" style="width:auto; padding:5px 8px; font-size:11.5px;" onchange="alterarVeiculoRota('${r.cage}', this.value)">
+            <option value="PASSEIO" ${r.vehicleType === 'PASSEIO' ? 'selected' : ''}>Passeio</option>
+            <option value="UTILITARIO" ${r.vehicleType === 'UTILITARIO' ? 'selected' : ''}>Utilitário</option>
+          </select>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function alterarVeiculoRota(cageCode, vehicleType) {
+  const r = db.rotas.find((x) => x.cage === cageCode);
+  if (!r) return;
+  r.vehicleType = vehicleType;
+  registrarLog('VEICULO_ROTA', '-', `${cageCode} alterado para ${vehicleType}`);
+  saveDB(true);
+  renderAll();
+}
+
+function registrarVolumosoManual() {
+  const inp = document.getElementById('input-bip-volumoso');
+  const code = inp.value.trim().toUpperCase();
+  if (!code) return;
+  processarCapturaVolumoso(code, 'Bipagem Manual');
+  inp.value = '';
+  inp.focus();
+}
+
+function processarCapturaVolumoso(spxTn, origemCaptura) {
+  const fb = document.getElementById('feedback-coleta');
+  const pkg = db.pacotes.find((p) => p.spxTn.toUpperCase() === spxTn.toUpperCase());
+
+  if (!pkg) {
+    if (fb) fb.innerHTML = `<span style="color:#f87171;">⚠️ Pacote <strong>${spxTn}</strong> não encontrado no romaneio carregado.</span>`;
+    return;
+  }
+
+  pkg.tipo = 'VOLUMOSO_ORIGINAL';
+  pkg.volumosoAt = new Date().toLocaleTimeString('pt-BR');
+  pkg.origemVolumoso = origemCaptura;
+  registrarLog('COLETA_VOLUMOSO', pkg.spxTn, `Marcado AMARELO na rota ${pkg.rotaAtual} (${origemCaptura})`);
+  saveDB(true);
+
+  if (fb) {
+    fb.innerHTML = `<span style="color:#facc15;">🟡 Volumoso registrado: <strong>${pkg.spxTn}</strong> alocado na rota original <strong>${pkg.rotaAtual}</strong> (${pkg.rotaNome}).</span>`;
+  }
+  renderAll();
+}
+
+function renderTabelaVolumosos() {
+  const tbody = document.getElementById('tbody-volumosos');
+  const vols = db.pacotes.filter((p) => p.tipo === 'VOLUMOSO_ORIGINAL' || p.tipo === 'VOLUMOSO_REALOCADO');
+  if (!vols.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-muted);">Nenhum volumoso registrado ainda.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = vols.map((p) => {
+    const r = db.rotas.find((x) => x.cage === p.rotaAtual) || { rota: p.rotaAtual, vehicleType: 'PASSEIO', auditStatus: 'NOT_VALIDATED' };
+    const corLabel = p.tipo === 'VOLUMOSO_ORIGINAL'
+      ? `<span class="badge badge-progress">Amarelo (Original)</span>`
+      : `<span class="badge badge-bad">Vermelho (Realocado de ${p.rotaOriginal})</span>`;
+    return `
+      <tr>
+        <td><strong>${p.spxTn}</strong></td>
+        <td><strong>${p.rotaAtual}</strong> ${corLabel}</td>
+        <td>${r.rota}</td>
+        <td>${badgeVeiculo(r.vehicleType)}</td>
+        <td>${badgeAuditoria(r.auditStatus)}</td>
+        <td>${p.volumosoAt || '-'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function buscarRotasAlternativas() {
+  const code = document.getElementById('input-bip-realocar').value.trim().toUpperCase();
+  const infoBox = document.getElementById('realocar-origem-info');
+  const listBox = document.getElementById('realocar-opcoes-lista');
+  listBox.innerHTML = '';
+
+  if (!code) return;
+  const pkg = db.pacotes.find((p) => p.spxTn.toUpperCase() === code);
+  if (!pkg) {
+    infoBox.innerHTML = `<div style="color:#f87171;">Pacote <strong>${code}</strong> não encontrado no romaneio.</div>`;
+    return;
+  }
+
+  const rotaOrigem = db.rotas.find((r) => r.cage === pkg.rotaAtual);
+  infoBox.innerHTML = `
+    <div class="panel-box" style="background:var(--bg-input); margin-bottom:14px;">
+      Pacote: <strong>${pkg.spxTn}</strong> · Bairro: <strong>${pkg.neighborhood || '-'}</strong> · Rota Atual: <strong>${pkg.rotaAtual}</strong> (${rotaOrigem ? rotaOrigem.rota : ''})
+    </div>
+  `;
+
+  const raioMax = Number(db.config.raioKm || 5);
+  const candidatas = [];
+
+  for (const r of db.rotas) {
+    if (r.cage === pkg.rotaAtual) continue;
+    if (r.auditStatus === 'VALIDATED') continue;
+    const dist = haversineKm(pkg.lat, pkg.lng, r.centerLat, r.centerLng);
+    if (dist <= raioMax) {
+      const vol = contarVolumososRota(r.cage);
+      const lim = getLimiteVolumosos(r.vehicleType);
+      candidatas.push({ rota: r, dist, volCount: vol.totalVol, lim });
+    }
+  }
+
+  candidatas.sort((a, b) => a.dist - b.dist || a.volCount - b.volCount);
+
+  if (!candidatas.length) {
+    listBox.innerHTML = `<div style="color:#fca5a5;">Nenhuma rota aberta (não validada) encontrada dentro do raio de <strong>${raioMax} km</strong>. Aumente o raio em <strong>Configurações</strong> se necessário.</div>`;
+    return;
+  }
+
+  listBox.innerHTML = candidatas.map((c) => `
+    <div class="alt-option">
+      <div>
+        <strong style="font-size:16px;">${c.rota.cage}</strong> — ${c.rota.rota} ${badgeVeiculo(c.rota.vehicleType)} ${badgeAuditoria(c.rota.auditStatus)}
+        <div style="font-size:12.5px; color:var(--text-muted); margin-top:4px;">
+          Distância estimada: <strong style="color:var(--primary);">${c.dist.toFixed(1)} km</strong> · Volumosos na rota: <strong>${c.volCount}/${c.lim}</strong>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="confirmarRealocacao('${pkg.spxTn}', '${c.rota.cage}', ${c.dist.toFixed(1)})">
+        Transferir para ${c.rota.cage}
+      </button>
+    </div>
+  `).join('');
+}
+
+function confirmarRealocacao(spxTn, targetCage, distKm) {
+  const pkg = db.pacotes.find((p) => p.spxTn === spxTn);
+  const targetRota = db.rotas.find((r) => r.cage === targetCage);
+  if (!pkg || !targetRota) return;
+  if (targetRota.auditStatus === 'VALIDATED') {
+    alert('Esta rota já foi Validada e está bloqueada.');
+    return;
+  }
+
+  if (!pkg.rotaOriginal) pkg.rotaOriginal = pkg.rotaAtual;
+  const prevCage = pkg.rotaAtual;
+  pkg.rotaAtual = targetCage;
+  pkg.tipo = 'VOLUMOSO_REALOCADO';
+  pkg.volumosoAt = new Date().toLocaleTimeString('pt-BR');
+
+  registrarLog('REALOCACAO', pkg.spxTn, `Transferido de ${prevCage} para ${targetCage} (${distKm} km) — Marcação VERMELHA`);
+  saveDB(true);
+  buscarRotasAlternativas();
+  renderAll();
+}
+
+/* ================= 7. RECEBIMENTO, AUDITORIA & MESAS ================= */
+function salvarMetaRecebimento() {
+  const val = Number(document.getElementById('dailyGoalInput').value);
+  if (val > 0) {
+    db.config.dailyGoal = val;
+    saveDB(true);
+    renderRecebimento();
+  }
+}
+
+function renderRecebimento() {
+  const goal = Math.max(1, Number(db.config.dailyGoal || 29000));
+  const done = Number(db.receive?.totalRecebido || 0);
+  const left = Math.max(0, goal - done);
+  const pctDone = Math.min(100, (done / goal) * 100);
+  const pctLeft = Math.max(0, 100 - pctDone);
+  const totalRate = Number(db.receive?.totalPorHoraTodos || 0);
+
+  document.getElementById('dailyGoalInput').value = goal;
+  document.getElementById('recFraction').textContent = `${fmtNum(done)} / ${fmtNum(goal)}`;
+  document.getElementById('recProgressBar').style.width = `${pctDone.toFixed(2)}%`;
+  document.getElementById('recPctText').textContent = `${pctDone.toFixed(2).replace('.', ',')}% concluído`;
+  document.getElementById('recRemainingText').textContent = `Faltam ${fmtNum(left)} (${pctLeft.toFixed(2).replace('.', ',')}%)`;
+
+  document.getElementById('kpiGoal').textContent = fmtNum(goal);
+  document.getElementById('kpiDone').textContent = fmtNum(done);
+  document.getElementById('kpiDonePct').textContent = `${pctDone.toFixed(2).replace('.', ',')}% concluído`;
+  document.getElementById('kpiLeft').textContent = fmtNum(left);
+  document.getElementById('kpiLeftPct').textContent = `${pctLeft.toFixed(2).replace('.', ',')}% restante`;
+  document.getElementById('kpiTotalRate').textContent = `${fmtNum(totalRate)} /h`;
+  document.getElementById('kpiEta').textContent =
+    left === 0 ? 'Meta concluída!' : totalRate > 0 ? `Previsão: ~${(left / totalRate).toFixed(1)}h no ritmo atual` : 'Aguardando ritmo...';
+
+  const tbody = document.getElementById('recOperatorsBody');
+  const opsList = db.receive?.operators || [];
+  tbody.innerHTML = opsList.length
+    ? opsList.map((op) => {
+        const r = Number(op.ratePerHour || 0);
+        let badge = `<span class="badge badge-bad">Abaixo (< 1.000/h)</span>`;
+        if (r >= 1000 && r <= 1500) badge = `<span class="badge badge-not-val">Na Meta (1.000–1.500/h)</span>`;
+        else if (r > 1500) badge = `<span class="badge badge-not-val">Acima (> 1.500/h)</span>`;
+        else if (r >= 750) badge = `<span class="badge badge-progress">Atenção (750–999/h)</span>`;
+        return `<tr><td><strong>${op.opsLabel || op.ops}</strong></td><td>${op.status || '-'}</td><td><strong>${fmtNum(op.totalBipado)}</strong></td><td><strong>${fmtNum(r)} /h</strong></td><td>${badge}</td></tr>`;
+      }).join('')
+    : `<tr><td colspan="5" style="color:var(--text-muted);">Aguardando leitura da tela de Gestão de Recebimento pela extensão...</td></tr>`;
+}
+
+function triggerNextAuditPage() {
+  window.postMessage({
+    source: 'GIA_WEB_APP',
+    type: 'SAVE_SHARED_PATCH',
+    patch: { triggerNextAuditPage: true }
+  }, '*');
+}
+
+function upsertMesaRoute() {
+  const mesa = document.getElementById('mMesa').value.trim() || 'Mesa 01';
+  const ops = document.getElementById('mOps').value.trim().toLowerCase() || 'ops179126';
+  const operador = document.getElementById('mOperador').value.trim() || 'Conferente';
+  const rota = document.getElementById('mRota').value.trim().toUpperCase() || 'G-24';
+  const total = Math.max(1, Number(document.getElementById('mTotalPct').value || 100));
+  const done = Math.max(0, Number(document.getElementById('mDonePct').value || 0));
+  const falt = Math.max(0, Number(document.getElementById('mFalt').value || 0));
+  const inc = Math.max(0, Number(document.getElementById('mInc').value || 0));
+
+  const idx = db.mesasAtivas.findIndex((m) => m.mesa.toLowerCase() === mesa.toLowerCase());
+  const entry = {
+    mesa, ops, operador, rota, total, done, falt, inc,
+    status: 'EM_ROTA',
+    routeStartTs: idx >= 0 && db.mesasAtivas[idx].routeStartTs ? db.mesasAtivas[idx].routeStartTs : Date.now(),
+    fleetWaitStartTs: null
+  };
+  if (idx >= 0) db.mesasAtivas[idx] = entry;
+  else db.mesasAtivas.push(entry);
+
+  registrarLog('ROTA_MESA', '-', `${mesa} (${ops}) iniciou/atualizou rota ${rota}`);
+  saveDB(true);
+  renderAll();
+}
+
+function finalizarRotaMesa() {
+  const mesa = document.getElementById('mMesa').value.trim() || 'Mesa 01';
+  const idx = db.mesasAtivas.findIndex((m) => m.mesa.toLowerCase() === mesa.toLowerCase());
+  if (idx >= 0) {
+    const m = db.mesasAtivas[idx];
+    const durationSec = m.routeStartTs ? (Date.now() - m.routeStartTs) / 1000 : 0;
+    db.historicoRotasMesa.unshift({
+      mesa: m.mesa,
+      ops: m.ops,
+      rota: m.rota,
+      done: m.done,
+      total: m.total,
+      falt: m.falt,
+      inc: m.inc,
+      durationSec
+    });
+    m.status = 'AGUARDANDO_FROTA';
+    m.fleetWaitStartTs = Date.now();
+    registrarLog('FINALIZA_ROTA_MESA', '-', `${m.mesa} (${m.ops}) finalizou rota ${m.rota} em ${formatDuration(durationSec)}`);
+    saveDB(true);
+    renderAll();
+  }
+}
+
+function renderAuditoria() {
+  const a = db.auditStats || {};
+  document.getElementById('auditTotalRoutes').textContent = fmtNum(a.totalRoutesExpected || 0);
+  document.getElementById('auditDoneRoutes').textContent = fmtNum(a.completedRoutesCount || 0);
+  document.getElementById('auditLeftRoutes').textContent = fmtNum(a.remainingRoutesCount || 0);
+  document.getElementById('auditCurrentPageBadge').textContent = `Página atual: ${a.pageNum || 1}`;
+
+  const auditorsBody = document.getElementById('auditorsTableBody');
+  const auditors = a.byAuditor || [];
+  auditorsBody.innerHTML = auditors.length
+    ? auditors.map((item) => {
+        const hasScan = Number(item.bipados || 0) > 0;
+        return `
+          <tr>
+            <td><strong>${item.auditor}</strong></td>
+            <td>${item.currentRoute || '-'}</td>
+            <td>${item.doneRoutes || 0} / ${item.routesCount || 0}</td>
+            <td><strong>${fmtNum(item.bipados || 0)}</strong></td>
+            <td>${hasScan ? `<span class="badge badge-not-val">Bipando (${fmtNum(item.bipados)})</span>` : `<span class="badge badge-bad">Sem bipagem registrada</span>`}</td>
+          </tr>
+        `;
+      }).join('')
+    : `<tr><td colspan="5" style="color:var(--text-muted);">Aguardando leitura da Gestão de Auditoria / VT Detail...</td></tr>`;
+
+  const waitingFleet = db.mesasAtivas.filter((m) => m.status === 'AGUARDANDO_FROTA');
+  const now = Date.now();
+  document.getElementById('fleetSummary').innerHTML = waitingFleet.length
+    ? waitingFleet.map((m) => `<div class="alert-box"><strong>${m.mesa}</strong> (${m.ops}) — Rota <strong>${m.rota}</strong> finalizada. Aguardando frota há <strong>${formatDuration((now - m.fleetWaitStartTs) / 1000)}</strong>.</div>`).join('')
+    : 'Nenhuma mesa aguardando frota no momento.';
+
+  const tbody = document.getElementById('tbody-auditoria');
+  if (!db.rotas.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-muted);">Nenhuma rota carregada.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = db.rotas.map((r) => `
+    <tr>
+      <td><strong>${r.cage}</strong></td>
+      <td>${r.at}</td>
+      <td>${r.rota}</td>
+      <td>${badgeVeiculo(r.vehicleType)}</td>
+      <td>${badgeAuditoria(r.auditStatus)}</td>
+      <td>
+        <select class="form-control" style="width:auto; padding:5px 8px; font-size:12px;" onchange="setAuditStatus('${r.cage}', this.value)">
+          <option value="NOT_VALIDATED" ${r.auditStatus === 'NOT_VALIDATED' ? 'selected' : ''}>Not Validated</option>
+          <option value="IN_PROGRESS" ${r.auditStatus === 'IN_PROGRESS' ? 'selected' : ''}>In Progress</option>
+          <option value="VALIDATED" ${r.auditStatus === 'VALIDATED' ? 'selected' : ''}>Validated (Bloqueia)</option>
+        </select>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function setAuditStatus(cageCode, newStatus) {
+  const r = db.rotas.find((x) => x.cage === cageCode);
+  if (!r) return;
+  r.auditStatus = newStatus;
+  registrarLog('AUDITORIA_VT', '-', `${cageCode} status alterado para ${newStatus}`);
+  saveDB(true);
+  renderAll();
+}
+
+function enviarAlertaSalvamento() {
+  const mesa = document.getElementById('saveMesa').value.trim();
+  const ops = document.getElementById('saveOps').value.trim().toLowerCase();
+  const cage = (document.getElementById('saveCage').value || '').trim().toUpperCase();
+  const br = (document.getElementById('saveBr').value || '').trim().toUpperCase();
+  const tipo = document.getElementById('saveTipo').value;
+  if (!cage && !br && !mesa && !ops) return;
+
+  const matchedMesa = db.mesasAtivas.find((m) => m.rota.toUpperCase() === cage);
+  db.alertasSalvamento.unshift({
+    id: 'AL_' + Date.now(),
+    tipo,
+    cage: cage || (matchedMesa ? matchedMesa.rota : 'SEM-ROTA'),
+    br: br || 'SEM-BR',
+    mesa: mesa || (matchedMesa ? matchedMesa.mesa : ''),
+    ops: ops || (matchedMesa ? matchedMesa.ops : ''),
+    pickedUp: false,
+    createdAt: Date.now()
+  });
+
+  registrarLog('SALVAMENTO_ALERTA', br || '-', `Enviado para ${mesa || ops || cage} (${tipo})`);
+  saveDB(true);
+  renderAll();
+}
+
+document.getElementById('pdfFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files?.[0];
+  if (!file || !window.pdfjsLib) return;
+  const buf = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += ' ' + content.items.map((it) => it.str).join(' ');
+  }
+  const brMatch = fullText.match(/\bBR[A-Z0-9]{8,25}\b/i);
+  const cageMatch = fullText.match(/\b[A-Z]-\d{1,3}\b/);
+  if (brMatch) document.getElementById('saveBr').value = brMatch[0].toUpperCase();
+  if (cageMatch) document.getElementById('saveCage').value = cageMatch[0].toUpperCase();
+  document.getElementById('pdfExtractPreview').textContent =
+    `Etiqueta lida: Gaiola=${cageMatch ? cageMatch[0].toUpperCase() : '-'} | BR=${brMatch ? brMatch[0].toUpperCase() : '-'}`;
+});
+
+/* ================= 8. MAPA ESTILO CIRCUIT ================= */
+function popularSelectMapa() {
+  const sel = document.getElementById('select-rota-mapa');
+  const prev = sel.value;
+  sel.innerHTML = db.rotas.map((r) => `<option value="${r.cage}">${r.cage} — ${r.rota}</option>`).join('');
+  if (prev && db.rotas.some((r) => r.cage === prev)) sel.value = prev;
+}
+
+function abrirRotaNoMapa(cageCode) {
+  const navMapa = Array.from(document.querySelectorAll('.nav-item')).find((b) => b.textContent.includes('Mapa Estilo Circuit'));
+  openView('view-mapa', 'Volumosos / Mapa da Rota', navMapa);
+  document.getElementById('select-rota-mapa').value = cageCode;
+  carregarMapaRota(cageCode);
+}
+
+function carregarMapaRota(cageCode) {
+  if (!cageCode) return;
+  const rota = db.rotas.find((r) => r.cage === cageCode);
+  const pkgs = db.pacotes.filter((p) => p.rotaAtual === cageCode);
+  document.getElementById('map-rota-titulo').textContent = rota ? `${rota.cage} (${rota.rota})` : cageCode;
+
+  if (!mapInstance) {
+    mapInstance = L.map('map-container').setView([-20.4697, -54.6201], 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap & CARTO',
+      maxZoom: 19
+    }).addTo(mapInstance);
+    mapLayerGroup = L.layerGroup().addTo(mapInstance);
+  }
+
+  mapLayerGroup.clearLayers();
+  const coords = [];
+
+  pkgs.forEach((p, idx) => {
+    if (!p.lat || !p.lng) return;
+    coords.push([p.lat, p.lng]);
+
+    let color = '#3b82f6';
+    let labelTipo = 'Pacote Normal';
+    if (p.tipo === 'VOLUMOSO_ORIGINAL') {
+      color = '#eab308';
+      labelTipo = 'Volumoso Original da Rota';
+    } else if (p.tipo === 'VOLUMOSO_REALOCADO') {
+      color = '#ef4444';
+      labelTipo = `Volumoso Realocado (Origem: ${p.rotaOriginal || '-'})`;
+    }
+
+    const marker = L.circleMarker([p.lat, p.lng], {
+      radius: p.tipo === 'NORMAL' ? 7 : 10,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 1.5,
+      opacity: 1,
+      fillOpacity: 0.9
+    }).addTo(mapLayerGroup);
+
+    marker.bindPopup(`
+      <strong>Stop #${p.stop || idx + 1}</strong> — ${p.spxTn}<br/>
+      Tipo: <strong style="color:${color}">${labelTipo}</strong><br/>
+      Endereço: ${p.address || '-'}<br/>
+      Bairro: ${p.neighborhood || '-'}
+    `);
+  });
+
+  if (coords.length > 1) {
+    L.polyline(coords, { color: '#38bdf8', weight: 2.5, opacity: 0.65, dashArray: '6, 6' }).addTo(mapLayerGroup);
+    mapInstance.fitBounds(coords, { padding: [30, 30] });
+  } else if (coords.length === 1) {
+    mapInstance.setView(coords[0], 15);
+  }
+
+  setTimeout(() => mapInstance.invalidateSize(), 150);
+
+  const listEl = document.getElementById('map-packages-list');
+  listEl.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Stop</th>
+          <th>SPX TN</th>
+          <th>Classificação</th>
+          <th>Endereço / Bairro</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${pkgs.map((p) => {
+          const tag = p.tipo === 'NORMAL'
+            ? `<span class="badge badge-passeio">Azul · Normal</span>`
+            : p.tipo === 'VOLUMOSO_ORIGINAL'
+              ? `<span class="badge badge-progress">Amarelo · Volumoso Original</span>`
+              : `<span class="badge badge-bad">Vermelho · Realocado (${p.rotaOriginal})</span>`;
+          return `<tr><td>${p.stop || '-'}</td><td><strong>${p.spxTn}</strong></td><td>${tag}</td><td>${p.address || '-'} — ${p.neighborhood || '-'}</td></tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+/* ================= 9. IMPORTAR / EXPORTAR ROMANEIO & EXEMPLO ================= */
+function carregarDadosExemplo() {
+  db.rotas = [
+    { cage: 'P-14', rota: 'Rota 017 - Centro/Amambaí', at: 'AT991001', vehicleType: 'PASSEIO', auditStatus: 'NOT_VALIDATED', centerLat: -20.471, centerLng: -54.618 },
+    { cage: 'P-15', rota: 'Rota 018 - Jardim dos Estados', at: 'AT991002', vehicleType: 'PASSEIO', auditStatus: 'IN_PROGRESS', centerLat: -20.463, centerLng: -54.602 },
+    { cage: 'P-16', rota: 'Rota 019 - Tiradentes', at: 'AT991003', vehicleType: 'UTILITARIO', auditStatus: 'NOT_VALIDATED', centerLat: -20.478, centerLng: -54.585 },
+    { cage: 'P-20', rota: 'Rota 022 - Aero Rancho', at: 'AT991004', vehicleType: 'PASSEIO', auditStatus: 'VALIDATED', centerLat: -20.512, centerLng: -54.635 }
+  ];
+
+  db.pacotes = [
+    { seq: 1, stop: 1, spxTn: 'BR261948528714L', zipcode: '79002-010', address: 'Rua 14 de Julho, 1200', city: 'Campo Grande', neighborhood: 'Centro', lat: -20.4705, lng: -54.6175, at: 'AT991001', cageOriginal: 'P-14', rotaAtual: 'P-14', rotaNome: 'Rota 017', tipo: 'NORMAL' },
+    { seq: 2, stop: 2, spxTn: 'BR261948528715M', zipcode: '79002-100', address: 'Av. Afonso Pena, 2400', city: 'Campo Grande', neighborhood: 'Centro', lat: -20.4720, lng: -54.6190, at: 'AT991001', cageOriginal: 'P-14', rotaAtual: 'P-14', rotaNome: 'Rota 017', tipo: 'NORMAL' },
+    { seq: 3, stop: 3, spxTn: 'BR261948528716N', zipcode: '79020-120', address: 'Rua Ceará, 890', city: 'Campo Grande', neighborhood: 'Santa Fé', lat: -20.4640, lng: -54.6030, at: 'AT991002', cageOriginal: 'P-15', rotaAtual: 'P-15', rotaNome: 'Rota 018', tipo: 'NORMAL' },
+    { seq: 4, stop: 4, spxTn: 'BR261948528717P', zipcode: '79041-010', address: 'Rua do Seminário, 450', city: 'Campo Grande', neighborhood: 'Tiradentes', lat: -20.4775, lng: -54.5860, at: 'AT991003', cageOriginal: 'P-16', rotaAtual: 'P-16', rotaNome: 'Rota 019', tipo: 'NORMAL' },
+    { seq: 5, stop: 5, spxTn: 'BR261948528718Q', zipcode: '79080-001', address: 'Av. Guaicurus, 3100', city: 'Campo Grande', neighborhood: 'Aero Rancho', lat: -20.5110, lng: -54.6340, at: 'AT991004', cageOriginal: 'P-20', rotaAtual: 'P-20', rotaNome: 'Rota 022', tipo: 'NORMAL' }
+  ];
+
+  registrarLog('IMPORT_EXEMPLO', '-', 'Dados de exemplo carregados (P-14, P-15, P-16, P-20)');
+  saveDB(true);
+  renderAll();
+  alert('Dados de exemplo carregados! Teste bipar BR261948528714L em Coleta de Volumosos ou Realocar.');
+}
+
+function parseRowsToDB(rows) {
+  if (!rows || !rows.length) return;
+  const rotasMap = new Map();
+  const pacotesList = [];
+
+  rows.forEach((row, i) => {
+    const spxTn = String(row['SPX TN'] || row['spx_tn'] || row['Tracking Number'] || `BR_EX_${i + 1}`).trim();
+    const cage = String(row['Corridor Cage'] || row['Corridor/Cage'] || row['Cage'] || 'P-01').trim();
+    const rota = String(row['Rota'] || row['Route'] || cage).trim();
+    const at = String(row['Planned AT'] || row['AT'] || 'AT-GERAL').trim();
+    const lat = parseFloat(row['Latitude'] || row['lat'] || -20.4697) || -20.4697;
+    const lng = parseFloat(row['Longitude'] || row['lng'] || -54.6201) || -54.6201;
+
+    if (!rotasMap.has(cage)) {
+      rotasMap.set(cage, {
+        cage,
+        rota,
+        at,
+        vehicleType: 'PASSEIO',
+        auditStatus: 'NOT_VALIDATED',
+        centerLat: lat,
+        centerLng: lng
+      });
+    }
+
+    pacotesList.push({
+      seq: Number(row['Sequence'] || i + 1),
+      stop: Number(row['Stop'] || i + 1),
+      spxTn,
+      zipcode: String(row['Zipcode'] || ''),
+      address: String(row['Destination Address'] || row['Address'] || ''),
+      city: String(row['City'] || ''),
+      neighborhood: String(row['Neighborhood'] || ''),
+      lat,
+      lng,
+      at,
+      cageOriginal: cage,
+      rotaAtual: cage,
+      rotaNome: rota,
+      tipo: 'NORMAL'
+    });
+  });
+
+  db.rotas = Array.from(rotasMap.values());
+  db.pacotes = pacotesList;
+  registrarLog('IMPORT_ROMANEIO', '-', `${db.pacotes.length} pacotes e ${db.rotas.length} rotas importados`);
+  saveDB(true);
+  renderAll();
+  alert(`Romaneio importado com sucesso: ${db.rotas.length} rotas e ${db.pacotes.length} pacotes.`);
+}
+
+function importarArquivoRomaneio() {
+  const fileInput = document.getElementById('file-romaneio');
+  const file = fileInput.files[0];
+  if (!file) {
+    alert('Selecione um arquivo CSV, TXT ou XLSX primeiro.');
+    return;
+  }
+
+  const reader = new FileReader();
+  const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+
+  reader.onload = (e) => {
+    if (isExcel) {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+      parseRowsToDB(jsonRows);
+    } else {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      if (lines.length < 2) return alert('Arquivo vazio ou sem linhas de dados.');
+      const delimiter = lines[0].includes('\t') ? '\t' : ',';
+      const headers = lines[0].split(delimiter).map((h) => h.trim().replace(/^"|"$/g, ''));
+      const jsonRows = lines.slice(1).map((line) => {
+        const cols = line.split(delimiter).map((c) => c.trim().replace(/^"|"$/g, ''));
+        const obj = {};
+        headers.forEach((h, idx) => { obj[h] = cols[idx] ?? ''; });
+        return obj;
+      });
+      parseRowsToDB(jsonRows);
+    }
+  };
+
+  if (isExcel) reader.readAsArrayBuffer(file);
+  else reader.readAsText(file, 'UTF-8');
+}
+
+function exportarRomaneioExcel() {
+  if (!db.pacotes.length) {
+    alert('Não há dados de romaneio para exportar.');
+    return;
+  }
+  const rowsExport = db.pacotes.map((p) => {
+    const rAtual = db.rotas.find((x) => x.cage === p.rotaAtual) || { vehicleType: 'PASSEIO', auditStatus: 'NOT_VALIDATED' };
+    const statusLabel = p.tipo === 'NORMAL'
+      ? 'NORMAL (AZUL)'
+      : p.tipo === 'VOLUMOSO_ORIGINAL'
+        ? 'VOLUMOSO ORIGINAL (AMARELO)'
+        : 'VOLUMOSO REALOCADO (VERMELHO)';
+
+    return {
+      Sequence: p.seq,
+      Stop: p.stop,
+      'SPX TN': p.spxTn,
+      Zipcode: p.zipcode,
+      'Destination Address': p.address,
+      City: p.city,
+      Neighborhood: p.neighborhood,
+      Latitude: p.lat,
+      Longitude: p.lng,
+      'Planned AT': p.at,
+      'Corridor Cage Original': p.cageOriginal,
+      'Corridor Cage Final': p.rotaAtual,
+      Rota: p.rotaNome,
+      'Tipo Veículo': rAtual.vehicleType,
+      'Status G.ia': statusLabel,
+      'Status Auditoria': rAtual.auditStatus,
+      'Processado Por': `${db.config.appName} - ${db.config.hubName}`
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rowsExport);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Romaneio_Gia');
+  XLSX.writeFile(wb, `Gia_Romaneio_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  registrarLog('EXPORT_ROMANEIO', '-', `Exportados ${rowsExport.length} registros em .xlsx`);
+}
+
+/* ================= 10. CONFIGURAÇÕES, USUÁRIOS & LOGS ================= */
+function previewLogo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    db.config.logoDataUrl = e.target.result;
+    aplicarIdentidadeVisual();
+  };
+  reader.readAsDataURL(file);
+}
+
+function salvarConfiguracoes() {
+  db.config.raioKm = Number(document.getElementById('cfg-raio').value || 5);
+  db.config.capPasseio = Number(document.getElementById('cfg-cap-passeio').value || 2);
+  db.config.capUtil = Number(document.getElementById('cfg-cap-util').value || 10);
+  db.config.appName = document.getElementById('cfg-app-name').value.trim() || 'G.ia';
+  db.config.hubName = document.getElementById('cfg-hub-name').value.trim() || 'LM Hub_MS_Campo Grande';
+  db.config.primaryColor = document.getElementById('cfg-primary-color').value || '#38bdf8';
+
+  registrarLog('CONFIG_SALVA', '-', `Raio: ${db.config.raioKm} km | Hub: ${db.config.hubName}`);
+  saveDB(true);
+  aplicarIdentidadeVisual();
+  renderAll();
+  alert('Configurações salvas com sucesso!');
+}
+
+function criarUsuario() {
+  if (!currentUser || currentUser.role !== 'ADMIN') {
+    alert('Apenas administradores podem criar usuários.');
+    return;
+  }
+  const id = document.getElementById('new-user-id').value.trim();
+  const name = document.getElementById('new-user-name').value.trim();
+  const pass = document.getElementById('new-user-pass').value.trim();
+  const role = document.getElementById('new-user-role').value;
+  if (!id || !name || !pass) return alert('Preencha matrícula/login, nome e senha.');
+  if (db.users.some((u) => u.id.toLowerCase() === id.toLowerCase())) return alert('Este login já existe.');
+
+  db.users.push({ id, name, pass, role });
+  document.getElementById('new-user-id').value = '';
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-pass').value = '';
+  registrarLog('USER_CREATE', '-', `Criado usuário ${id} (${role})`);
+  saveDB(false);
+  renderUsuarios();
+}
+
+function removerUsuario(id) {
+  if (id === 'admin') return alert('Não é possível remover o administrador principal.');
+  db.users = db.users.filter((u) => u.id !== id);
+  registrarLog('USER_REMOVE', '-', `Removido usuário ${id}`);
+  saveDB(false);
+  renderUsuarios();
+}
+
+function renderUsuarios() {
+  const tbody = document.getElementById('tbody-usuarios');
+  tbody.innerHTML = db.users.map((u) => `
+    <tr>
+      <td><strong>${u.id}</strong></td>
+      <td>${u.name}</td>
+      <td><span class="badge ${u.role === 'ADMIN' ? 'badge-util' : 'badge-passeio'}">${u.role}</span></td>
+      <td>
+        ${u.id === 'admin' ? '<span style="color:var(--text-muted); font-size:12px;">Protegido</span>' : `<button class="btn btn-danger btn-sm" onclick="removerUsuario('${u.id}')">Remover</button>`}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderLogs() {
+  const tbody = document.getElementById('tbody-logs');
+  if (!db.logs.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--text-muted);">Nenhum log registrado ainda.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = db.logs.map((l) => `
+    <tr>
+      <td>${l.dataHora}</td>
+      <td>${l.operador}</td>
+      <td><strong>${l.acao}</strong></td>
+      <td>${l.spxTn}</td>
+      <td>${l.detalhes}</td>
+    </tr>
+  `).join('');
+}
+
+/* ================= 11. PONTE COM EXTENSÃO CHROME ================= */
+function requestSync() {
+  window.postMessage({ source: 'GIA_WEB_APP', type: 'REQUEST_SYNC' }, '*');
+}
+
+window.addEventListener('message', (event) => {
+  if (event.source !== window || !event.data || event.data.source !== 'GIA_EXTENSION_BRIDGE') return;
+  const p = event.data.payload || {};
+
+  if (p.receive) db.receive = p.receive;
+  if (p.auditStats) db.auditStats = p.auditStats;
+
+  if (Array.isArray(p.vtRows) && p.vtRows.length) {
+    for (const row of p.vtRows) {
+      const existing = db.rotas.find((r) => r.cage === row.id || r.cage === row.cage);
+      if (existing) {
+        if (row.isDone) existing.auditStatus = 'VALIDATED';
+        else if (existing.auditStatus === 'NOT_VALIDATED') existing.auditStatus = 'IN_PROGRESS';
+      }
+    }
+  }
+
+  if (p.webState) {
+    if (p.webState.dailyGoal) db.config.dailyGoal = p.webState.dailyGoal;
+    if (Array.isArray(p.webState.mesas)) db.mesasAtivas = p.webState.mesas;
+    if (Array.isArray(p.webState.routeHistory)) db.historicoRotasMesa = p.webState.routeHistory;
+    if (Array.isArray(p.webState.alerts)) db.alertasSalvamento = p.webState.alerts;
+  }
+
+  if (p.capturedBr && (!p.lastBrTs || p.lastBrTs !== window.__lastProcessedBrTs)) {
+    window.__lastProcessedBrTs = p.lastBrTs || Date.now();
+    processarCapturaVolumoso(p.capturedBr, 'Extensão Chrome (Campo Azul)');
+  }
+
+  saveDB(false);
+  renderAll();
+});
+
+function renderAll() {
+  renderDashboard();
+  renderRotas();
+  renderRecebimento();
+  renderTabelaVolumosos();
+  renderAuditoria();
+  renderLogs();
+  if (isMesaMode) renderMesaTerminal();
+}
+
+(function bootstrap() {
+  document.getElementById('cfg-raio').value = db.config.raioKm;
+  document.getElementById('cfg-cap-passeio').value = db.config.capPasseio;
+  document.getElementById('cfg-cap-util').value = db.config.capUtil;
+  document.getElementById('cfg-app-name').value = db.config.appName;
+  document.getElementById('cfg-hub-name').value = db.config.hubName;
+  document.getElementById('cfg-primary-color').value = db.config.primaryColor;
+  document.getElementById('dailyGoalInput').value = db.config.dailyGoal || 29000;
+
+  setInterval(() => {
+    if (currentUser && isMesaMode && mesaSession) {
+      renderMesaTerminal();
+    }
+  }, 1000);
+
+  const savedSession = sessionStorage.getItem(SESSION_KEY);
+  if (savedSession) {
+    try {
+      currentUser = JSON.parse(savedSession);
+      iniciarApp();
+      return;
+    } catch {}
+  }
+  document.getElementById('login-screen').style.display = 'flex';
+})();
+</script>
+</body>
+</html>
