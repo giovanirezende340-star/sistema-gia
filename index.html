@@ -3,60 +3,246 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>G.ia — Monitor Operacional Shopee Xpress</title>
+  <title>G.ia — Gestão Inteligente de Alocação & Operação</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
-      --bg: #070d19;
-      --panel: #0e172a;
-      --card: #131f38;
-      --border: #233354;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --cyan: #22d3ee;
-      --green: #22c55e;
-      --amber: #f59e0b;
-      --red: #ef4444;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --primary-glow: rgba(56, 189, 248, 0.35);
+      --bg-dark: #060a14;
+      --bg-sidebar: #0b1120;
+      --bg-card: #11192e;
+      --bg-input: #080d1a;
+      --border: #1e2d4a;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --blue-pkg: #3b82f6;
+      --yellow-vol: #eab308;
+      --red-realoc: #ef4444;
+      --green-ok: #10b981;
     }
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    body { margin: 0; background: var(--bg); color: var(--text); }
-    header {
-      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
-      padding: 14px 20px; background: var(--panel); border-bottom: 1px solid var(--border);
-    }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
-    nav { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px; background: #0a1222; border-bottom: 1px solid var(--border); }
-    .tab-btn {
-      background: var(--card); color: var(--muted); border: 1px solid var(--border);
-      padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600;
-    }
-    .tab-btn.active { background: rgba(34, 211, 238, 0.14); color: var(--cyan); border-color: var(--cyan); }
-    main { padding: 20px; max-width: 1480px; margin: 0 auto; }
-    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-    .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
-    .val { font-size: 26px; font-weight: 800; margin-top: 6px; }
-    .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
-    .progress-wrap { background: #091120; border-radius: 999px; height: 14px; overflow: hidden; border: 1px solid var(--border); margin: 10px 0; }
-    .progress-bar { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--green)); transition: width .35s ease; }
-    input, select, button {
-      background: #091120; color: var(--text); border: 1px solid var(--border);
-      border-radius: 8px; padding: 9px 12px; font-size: 14px;
-    }
-    button.primary { background: var(--cyan); color: #041018; font-weight: 700; border: none; cursor: pointer; }
-    button.success { background: var(--green); color: #041018; font-weight: 700; border: none; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
-    th { color: var(--muted); font-size: 12px; }
-    .badge { padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; display: inline-block; }
-    .ok { background: rgba(34,197,94,.16); color: #4ade80; }
-    .warn { background: rgba(245,158,11,.16); color: #fbbf24; }
-    .bad { background: rgba(239,68,68,.16); color: #f87171; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
     .hidden { display: none !important; }
+
+    /* ================= TELA DE LOGIN + VIDRO TRANSLÚCIDO ================= */
+    #login-screen {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle at 50% 45%, #0c162d 0%, #04070f 100%);
+    }
+    #neural-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .login-card {
+      position: relative; z-index: 2; width: 410px; max-width: 92vw;
+      background: rgba(10, 17, 34, 0.52);
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      border: 1px solid rgba(186, 230, 253, 0.22);
+      border-top: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 20px;
+      padding: 36px 32px;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8), inset 0 0 24px rgba(56, 189, 248, 0.08);
+      text-align: center;
+    }
+    .brand-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 70px; height: 70px; border-radius: 20px;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(255, 255, 255, 0.1));
+      border: 1px solid rgba(186, 230, 253, 0.45);
+      font-size: 26px; font-weight: 900; color: #ffffff;
+      box-shadow: 0 0 32px rgba(56, 189, 248, 0.35);
+      margin-bottom: 14px; overflow: hidden;
+    }
+    .brand-badge img { width: 100%; height: 100%; object-fit: cover; }
+    .login-card h1 { font-size: 28px; font-weight: 800; color: #ffffff; }
+    .login-card p.sub { color: #cbd5e1; font-size: 13px; margin: 6px 0 22px; }
+    .form-group { text-align: left; margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; color: #cbd5e1; margin-bottom: 6px; font-weight: 600; }
+    .form-control {
+      width: 100%; padding: 10px 12px; border-radius: 9px;
+      background: rgba(6, 11, 24, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      color: var(--text-main); font-size: 13.5px; outline: none; transition: 0.2s;
+    }
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 16px; border-radius: 9px; border: none; cursor: pointer;
+      font-weight: 700; font-size: 13.5px; transition: 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
+      color: #ffffff;
+      box-shadow: 0 4px 18px rgba(56, 189, 248, 0.35);
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #7dd3fc, #0ea5e9); }
+    .btn-secondary { background: #16223b; color: var(--text-main); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #1f2f50; }
+    .btn-success { background: #10b981; color: #04130d; }
+    .btn-danger { background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .login-error { color: #fda4af; font-size: 12px; margin-top: 10px; display: none; }
+
+    /* ================= LAYOUT CORPORATIVO ================= */
+    #app-shell { display: none; height: 100vh; grid-template-columns: 260px 1fr; }
+    #app-shell.mesa-only { grid-template-columns: 1fr; }
+    aside.sidebar {
+      background: var(--bg-sidebar); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar-header {
+      padding: 18px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sidebar-logo {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), #0284c7);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 15px; color: #fff; overflow: hidden; flex-shrink: 0;
+    }
+    .sidebar-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .hub-selector {
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      font-size: 12px; color: var(--text-muted);
+    }
+    .hub-selector strong { display: block; color: var(--text-main); font-size: 13px; margin-top: 2px; }
+
+    .nav-menu { padding: 12px 10px; flex: 1; }
+    .nav-group { margin-bottom: 6px; }
+    .nav-parent {
+      width: 100%; background: transparent; border: none; color: var(--text-main);
+      padding: 10px 12px; border-radius: 8px; display: flex; align-items: center;
+      justify-content: space-between; cursor: pointer; font-size: 13.5px; font-weight: 600;
+    }
+    .nav-parent:hover { background: rgba(56, 189, 248, 0.08); }
+    .nav-parent.active { background: rgba(56, 189, 248, 0.14); color: var(--primary); }
+    .nav-sub { padding-left: 14px; margin-top: 4px; display: flex; flex-direction: column; gap: 2px; }
+    .nav-sub.collapsed { display: none; }
+    .nav-item {
+      background: transparent; border: none; color: var(--text-muted);
+      padding: 8px 12px; border-radius: 6px; text-align: left; cursor: pointer;
+      font-size: 13px; transition: 0.15s; border-left: 2px solid transparent;
+    }
+    .nav-item:hover { color: var(--text-main); background: rgba(255,255,255,0.04); }
+    .nav-item.active {
+      color: var(--text-main); background: rgba(56, 189, 248, 0.12);
+      border-left-color: var(--primary); font-weight: 600;
+    }
+
+    /* ================= TOPBAR & MAIN ================= */
+    .main-area { display: flex; flex-direction: column; overflow: hidden; }
+    header.topbar {
+      min-height: 60px; background: var(--bg-sidebar); border-bottom: 1px solid var(--border);
+      padding: 10px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .breadcrumb { font-size: 13px; color: var(--text-muted); }
+    .breadcrumb span { color: var(--text-main); font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .sync-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+      border-radius: 999px; font-size: 12px; font-weight: 600;
+      background: rgba(56, 189, 248, 0.14); color: var(--primary);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+    .dot-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 8px var(--primary); }
+    .user-chip { font-size: 12.5px; color: var(--text-muted); }
+    .user-chip strong { color: var(--text-main); }
+
+    .content-scroll { flex: 1; overflow-y: auto; padding: 22px; }
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    /* ================= CARDS, PROGRESSO & KPI ================= */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .kpi-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    }
+    .kpi-card .label { font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-card .val { font-size: 26px; font-weight: 800; margin-top: 6px; }
+    .kpi-card .hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .panel-box {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px; margin-bottom: 18px;
+    }
+    .panel-title {
+      font-size: 15.5px; font-weight: 700; margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .progress-wrap {
+      background: var(--bg-input); border-radius: 999px; height: 14px;
+      overflow: hidden; border: 1px solid var(--border); margin: 10px 0;
+    }
+    .progress-bar {
+      height: 100%; background: linear-gradient(90deg, var(--primary), var(--green-ok));
+      transition: width 0.35s ease;
+    }
+
+    /* ================= ROTAS, MAPA & TABELAS ================= */
+    .routes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+    .route-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 15px; transition: 0.2s;
+    }
+    .route-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .route-card.locked { opacity: 0.68; border-color: #334155; }
+    .route-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .cage-code { font-size: 19px; font-weight: 800; }
+    .rota-sub { font-size: 12px; color: var(--text-muted); }
+
+    .badge {
+      padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block;
+    }
+    .badge-passeio { background: rgba(56, 189, 248, 0.16); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.35); }
+    .badge-util { background: rgba(168, 85, 247, 0.18); color: #c084fc; border: 1px solid rgba(168,85,247,0.35); }
+    .badge-not-val { background: rgba(16, 185, 129, 0.16); color: #34d399; }
+    .badge-progress { background: rgba(234, 179, 8, 0.18); color: #facc15; }
+    .badge-validated { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+    .badge-bad { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+
+    .pkg-counters {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0;
+      background: var(--bg-input); padding: 9px; border-radius: 8px; text-align: center;
+    }
+    .pkg-counters div span { display: block; font-size: 11px; color: var(--text-muted); }
+    .pkg-counters div strong { font-size: 15px; }
+    .c-blue { color: var(--blue-pkg); }
+    .c-yellow { color: var(--yellow-vol); }
+    .c-red { color: var(--red-realoc); }
+    .c-green { color: var(--green-ok); }
+
+    #map-container {
+      height: 440px; width: 100%; border-radius: 10px; border: 1px solid var(--border); z-index: 1;
+      background-color: #090d16;
+      background-image:
+        linear-gradient(rgba(0, 240, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.06) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .legend-bar { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; margin-bottom: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .dot-c { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { color: var(--text-muted); font-weight: 600; background: rgba(8, 13, 26, 0.65); }
+
+    .alt-option {
+      border: 1px solid var(--border); background: var(--bg-input); border-radius: 10px;
+      padding: 12px 14px; margin-bottom: 10px; display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+    .alt-option:hover { border-color: var(--primary); }
+
     .alert-box {
-      border-left: 5px solid var(--red); background: rgba(239, 68, 68, 0.12);
+      border-left: 5px solid var(--red-realoc); background: rgba(239, 68, 68, 0.12);
       padding: 14px; border-radius: 10px; margin-bottom: 10px;
       animation: pulseBorder 1.2s infinite;
     }
@@ -67,888 +253,191 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <span class="dot"></span>
-      <span id="headerTitle">G.ia — Painel Operacional Shopee Xpress</span>
+
+<!-- ==================== TELA DE LOGIN ==================== -->
+<div id="login-screen">
+  <canvas id="neural-canvas"></canvas>
+
+  <div class="login-card">
+    <div class="brand-badge" id="login-logo-box">G.ia</div>
+    <h1>G.ia</h1>
+    <p class="sub">Gestão Inteligente de Alocação, Auditoria & Operação</p>
+    <div class="form-group">
+      <label>Usuário / Matrícula Operacional</label>
+      <input type="text" id="login-user" class="form-control" placeholder="Ex: admin ou ops68103" />
     </div>
-    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-      <span class="sub" id="syncStatus">Aguardando extensão...</span>
-      <button class="tab-btn" id="modeSwitchBtn" onclick="toggleOperatorMode()">Abrir Modo Operador (Mesa)</button>
-      <button class="tab-btn" onclick="requestSync()">Sincronizar</button>
+    <div class="form-group">
+      <label>Senha de Acesso</label>
+      <input type="password" id="login-pass" class="form-control" placeholder="••••••••" onkeydown="if(event.key==='Enter') fazerLogin()" />
     </div>
-  </header>
+    <button class="btn btn-primary" style="width:100%" onclick="fazerLogin()">Entrar no Sistema</button>
+    <div class="login-error" id="login-error">Usuário ou senha inválidos. Solicite acesso ao administrador do Hub.</div>
+  </div>
+</div>
 
-  <nav id="adminNav">
-    <button class="tab-btn active" data-tab="recebimento">Recebimento</button>
-    <button class="tab-btn" data-tab="mesas">Auditoria, Mesas & Frota</button>
-    <button class="tab-btn" data-tab="salvamento">Salvamento / PDF</button>
-    <button class="tab-btn" data-tab="volumosos">Volumosos</button>
-  </nav>
+<!-- ==================== SHELL PRINCIPAL ==================== -->
+<div id="app-shell">
+  <aside class="sidebar" id="mainSidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo" id="sidebar-logo">G.ia</div>
+      <div>
+        <div style="font-weight:800; font-size:17px;" id="sidebar-app-name">G.ia</div>
+        <div style="font-size:11px; color:var(--text-muted);">Controle Logístico</div>
+      </div>
+    </div>
+    <div class="hub-selector">
+      Unidade Ativa:
+      <strong id="display-hub-name">LM Hub_MS_Campo Grande</strong>
+    </div>
 
-  <main>
-    <!-- MODO OPERADOR (30 MESAS + OPS) -->
-    <section id="operatorPortal" class="hidden">
-      <div class="card" id="opLoginCard" style="max-width:460px; margin:20px auto;">
-        <div class="label">Acesso do Conferente</div>
-        <h2 style="margin:6px 0 12px 0;">Entrar na Minha Mesa</h2>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-          <select id="opLoginMesa">
-            <option value="">Selecione a Mesa (01 a 30)...</option>
-          </select>
-          <input id="opLoginOps" placeholder="Digite seu OPS (ex: ops179126)" />
-          <button class="primary" onclick="loginOperatorMesa()">Entrar</button>
+    <nav class="nav-menu">
+      <div class="nav-group">
+        <button class="nav-parent active" onclick="toggleSub(this)">
+          <span>📊 Torre de Controle</span><span>▾</span>
+        </button>
+        <div class="nav-sub">
+          <button class="nav-item active" onclick="openView('view-dashboard', 'Torre de Controle / Visão Geral', this)">Visão Geral do Turno</button>
+          <button class="nav-item" onclick="openView('view-rotas', 'Torre de Controle / Rotas & Gaiolas', this)">Rotas & Gaiolas (P-XX)</button>
+          <button class="nav-item" onclick="openView('view-recebimento', 'Torre de Controle / Recebimento & Ritmo', this)">Recebimento (Meta & Ritmo)</button>
         </div>
-        <div class="sub" style="margin-top:10px;">Alerta sonoro e pisca-aba ativos para pacotes do Salvamento da sua rota.</div>
       </div>
 
-      <div id="opDashboard" class="hidden">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-          <div>
-            <strong style="font-size:18px;" id="opLoggedHeader">Mesa 01 · ops179126</strong>
-            <div class="sub">Alerta sonoro e pisca-aba ativos</div>
+      <div class="nav-group">
+        <button class="nav-parent" onclick="toggleSub(this)">
+          <span>📦 Operação & Volumosos</span><span>▾</span>
+        </button>
+        <div class="nav-sub">
+          <button class="nav-item" onclick="openView('view-coleta', 'Volumosos / Coleta Campo Azul', this)">Coleta de Volumosos</button>
+          <button class="nav-item" onclick="openView('view-realocar', 'Volumosos / Realocar Não Coube', this)">Realocar (Não Coube)</button>
+          <button class="nav-item" onclick="openView('view-salvamento', 'Operação / Estação de Salvamento', this)">Salvamento / Etiqueta PDF</button>
+          <button class="nav-item" onclick="openView('view-mapa', 'Volumosos / Mapa da Rota', this)">Mapa Estilo Circuit</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-parent" onclick="toggleSub(this)">
+          <span>🛡️ Gestão Auditoria</span><span>▾</span>
+        </button>
+        <div class="nav-sub">
+          <button class="nav-item" onclick="openView('view-auditoria', 'Auditoria / Status VT Detail', this)">Monitor VT Detail & Mesas</button>
+          <button class="nav-item" onclick="openView('view-logs', 'Auditoria / Log de Ações', this)">Histórico & Rastreabilidade</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-parent" onclick="toggleSub(this)">
+          <span>📁 Romaneio & Dados</span><span>▾</span>
+        </button>
+        <div class="nav-sub">
+          <button class="nav-item" onclick="openView('view-romaneio', 'Dados / Importar & Exportar', this)">Importar / Exportar Dia</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-parent" onclick="toggleSub(this)">
+          <span>⚙️ Configurações</span><span>▾</span>
+        </button>
+        <div class="nav-sub">
+          <button class="nav-item" onclick="openView('view-config', 'Configurações / Raio & Visual', this)">Raio (km), Capacidade & Marca</button>
+          <button class="nav-item" id="menu-users-btn" onclick="openView('view-usuarios', 'Configurações / Usuários', this)">Usuários & Acessos</button>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <div class="breadcrumb">G.ia / <span id="breadcrumb-text">Torre de Controle / Visão Geral</span></div>
+      <div class="topbar-right">
+        <div class="sync-pill" id="ext-status-pill">
+          <span class="dot-pulse"></span>
+          <span id="ext-status-text">Raio: 5 km | Auditoria Ativa</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-toggle-mesa" onclick="toggleOperatorMode()">Modo Operador (Mesa)</button>
+        <button class="btn btn-secondary btn-sm" onclick="requestSync()">Sincronizar</button>
+        <div class="user-chip">Operador: <strong id="current-user-label">-</strong></div>
+        <button class="btn btn-danger btn-sm" id="btn-logout" onclick="sair()">Sair</button>
+      </div>
+    </header>
+
+    <div class="content-scroll">
+
+      <!-- ==================== TERMINAL DA MESA (EXCLUSIVO CONFERENTE) ==================== -->
+      <section id="view-mesa-terminal" class="view-section">
+        <div class="panel-box" id="mesa-login-box" style="max-width:460px; margin:16px auto;">
+          <div class="panel-title"><span>Acesso da Mesa (01 a 30)</span></div>
+          <p style="color:var(--text-muted); font-size:13px; margin-bottom:14px;">
+            Entre com sua Mesa e OPS para receber notificações de salvamento e acompanhar sua rota atual e rotas finalizadas.
+          </p>
+          <div class="form-group">
+            <label>Mesa (01 a 30)</label>
+            <select id="mesa-select-login" class="form-control"></select>
           </div>
-          <div style="display:flex; gap:8px;">
-            <button class="tab-btn" onclick="playBeep()">Testar Som</button>
-            <button class="tab-btn" onclick="logoutOperatorMesa()">Trocar Mesa / OPS</button>
+          <div class="form-group">
+            <label>Seu OPS</label>
+            <input type="text" id="mesa-ops-login" class="form-control" placeholder="Ex: ops179126" onkeydown="if(event.key==='Enter') entrarNaMesa()" />
           </div>
+          <button class="btn btn-primary" style="width:100%;" onclick="entrarNaMesa()">Entrar na Mesa</button>
         </div>
 
-        <div class="card">
-          <div class="label">Notificações — Pacotes para Buscar no Salvamento / Devolução</div>
-          <div id="opAlertsContainer" style="margin-top:10px;">
-            <div class="sub">Nenhum pacote aguardando retirada para a sua rota no momento.</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="label">Rota em Andamento Agora</div>
-          <div id="opCurrentRouteContainer" style="margin-top:10px;">
-            <div class="sub">Nenhuma rota em andamento para você agora.</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="label">Minhas Rotas Finalizadas Hoje</div>
-          <table>
-            <thead>
-              <tr>
-                <th>Rota</th>
-                <th>Pacotes</th>
-                <th>Tempo para Finalizar</th>
-                <th>Falt.</th>
-                <th>Inc.</th>
-              </tr>
-            </thead>
-            <tbody id="opHistoryBody">
-              <tr><td colspan="5" class="sub">Nenhuma rota finalizada ainda neste turno.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- MENU 1: RECEBIMENTO -->
-    <section id="tab-recebimento">
-      <div class="card">
-        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px;">
-          <div>
-            <div class="label">Progresso da Meta Diária de Recebimento</div>
-            <div style="font-size:22px; font-weight:800; margin-top:4px;" id="recFraction">0 / 29.000</div>
-          </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <label for="dailyGoalInput" class="label">Meta do Dia:</label>
-            <input type="number" id="dailyGoalInput" value="29000" min="1" step="100" style="width:130px;" />
-            <button class="primary" onclick="saveDailyGoal()">Salvar Meta</button>
-          </div>
-        </div>
-        <div class="progress-wrap">
-          <div class="progress-bar" id="recProgressBar" style="width:0%;"></div>
-        </div>
-        <div style="display:flex; justify-content:space-between; font-size:13px;">
-          <span id="recPctText">0,00% concluído</span>
-          <span id="recRemainingText">Faltam 29.000 (100,00%)</span>
-        </div>
-      </div>
-
-      <div class="grid-4">
-        <div class="card">
-          <div class="label">Quantidade que Temos que Fazer</div>
-          <div class="val" id="kpiGoal">29.000</div>
-          <div class="sub">Meta programada</div>
-        </div>
-        <div class="card">
-          <div class="label">Quantidade que Já Fizemos</div>
-          <div class="val" id="kpiDone" style="color:var(--cyan);">0</div>
-          <div class="sub" id="kpiDonePct">0,00% concluído</div>
-        </div>
-        <div class="card">
-          <div class="label">Falta para Terminar</div>
-          <div class="val" id="kpiLeft" style="color:var(--amber);">29.000</div>
-          <div class="sub" id="kpiLeftPct">100,00% restante</div>
-        </div>
-        <div class="card">
-          <div class="label">Total de Todos os Operadores / Hora</div>
-          <div class="val" id="kpiTotalRate" style="color:var(--green);">0 /h</div>
-          <div class="sub" id="kpiEta">Previsão: --</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="label">Produtividade Individual (Meta: 1.000 a 1.500 /h)</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Operador (OPS)</th>
-              <th>Status</th>
-              <th>Bipados</th>
-              <th>Ritmo / Hora</th>
-              <th>Faixa (1.000–1.500/h)</th>
-            </tr>
-          </thead>
-          <tbody id="recOperatorsBody">
-            <tr><td colspan="5" class="sub">Aguardando leitura da tela de Gestão de Recebimento...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- MENU 2: AUDITORIA, MESAS & FROTA -->
-    <section id="tab-mesas" class="hidden">
-      <div class="grid-4">
-        <div class="card">
-          <div class="label">Rotas que Temos que Fazer</div>
-          <div class="val" id="auditTotalRoutes">0</div>
-          <div class="sub" id="auditPageInfo">Paginação: 24 rotas/página</div>
-        </div>
-        <div class="card">
-          <div class="label">Rotas Já Feitas</div>
-          <div class="val" id="auditDoneRoutes" style="color:var(--green);">0</div>
-          <div class="sub">Concluídas / validadas</div>
-        </div>
-        <div class="card">
-          <div class="label">Rotas que Faltam Fazer</div>
-          <div class="val" id="auditLeftRoutes" style="color:var(--amber);">0</div>
-          <div class="sub">Pendentes no turno</div>
-        </div>
-        <div class="card">
-          <div class="label">Paginação Gestão de Auditoria</div>
-          <div style="margin-top:8px;">
-            <button class="primary" onclick="triggerNextAuditPage()">Avançar Próxima Página (24 rotas)</button>
-          </div>
-          <div class="sub" id="auditCurrentPageBadge">Página atual: 1</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="label">Quem Está Conferindo / Auditando e Pacotes Bipados (Sem Depender de Mesa)</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Conferente / Auditor (OPS)</th>
-              <th>Rota Atual</th>
-              <th>Rotas Feitas / Total</th>
-              <th>Pacotes Bipados</th>
-              <th>Status de Bipagem</th>
-            </tr>
-          </thead>
-          <tbody id="auditorsTableBody">
-            <tr><td colspan="5" class="sub">Aguardando dados da Gestão de Auditoria / VT Detail...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="grid-2">
-        <div class="card">
-          <div class="label">Registrar / Atualizar Rota na Mesa (01 a 30)</div>
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px; margin-top:10px;">
-            <select id="mMesa"></select>
-            <input id="mOps" placeholder="OPS (ex: ops179126)" />
-            <input id="mOperador" placeholder="Nome conferente" />
-            <input id="mRota" placeholder="Rota (ex: G-24)" />
-            <input id="mTotalPct" type="number" placeholder="Total pacotes" />
-            <input id="mDonePct" type="number" placeholder="Bipados" />
-            <input id="mFalt" type="number" placeholder="Faltantes" value="0" />
-            <input id="mInc" type="number" placeholder="Incorretos" value="0" />
-          </div>
-          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-            <button class="primary" onclick="upsertActiveRoute()">Iniciar / Atualizar Rota</button>
-            <button class="tab-btn" onclick="finishRouteAndStartFleetWait()">Finalizar Rota -> Espera Frota</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="label">Mesas em Espera de Frota (Aguardando Carro)</div>
-          <div id="fleetSummary" style="margin-top:10px;" class="sub">Nenhuma mesa aguardando frota no momento.</div>
-        </div>
-      </div>
-
-      <div class="grid-2" id="mesasCardsGrid"></div>
-    </section>
-
-    <!-- MENU 3: SALVAMENTO / PDF -->
-    <section id="tab-salvamento" class="hidden">
-      <div class="card" style="max-width:680px;">
-        <div class="label">Estação de Salvamento — Leitor de Etiqueta / PDF (Elgin L420)</div>
-        <div class="sub">Selecione o PDF da etiqueta (ou informe Gaiola/Rota e BR) para disparar o alerta piscando + som na mesa da rota.</div>
-        <div style="margin-top:10px;">
-          <input type="file" id="pdfFileInput" accept="application/pdf" />
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-top:10px;">
-          <input id="saveCage" placeholder="Gaiola/Rota (ex: G-24)" />
-          <input id="saveBr" placeholder="Código BR (ex: BR264511182145U)" />
-          <select id="saveTipo">
-            <option value="Salvamento de Erros">Salvamento de Erros</option>
-            <option value="Devolução">Devolução</option>
-          </select>
-        </div>
-        <div style="margin-top:10px;">
-          <button class="primary" onclick="sendSaveAlert()">Enviar Notificação para a Mesa</button>
-        </div>
-        <div id="pdfExtractPreview" class="sub" style="margin-top:8px;"></div>
-      </div>
-    </section>
-
-    <!-- MENU 4: VOLUMOSOS -->
-    <section id="tab-volumosos" class="hidden">
-      <div class="grid-4">
-        <div class="card">
-          <div class="label">Total de Volumosos Hoje</div>
-          <div class="val" id="volTotalCount">0</div>
-          <div class="sub">Registrados no turno</div>
-        </div>
-        <div class="card">
-          <div class="label">Aguardando Expedição / Retirada</div>
-          <div class="val" id="volPendingCount" style="color:var(--amber);">0</div>
-          <div class="sub">Em aberto</div>
-        </div>
-        <div class="card">
-          <div class="label">Expedidos / Baixados</div>
-          <div class="val" id="volDoneCount" style="color:var(--green);">0</div>
-          <div class="sub">Concluídos</div>
-        </div>
-        <div class="card">
-          <div class="label">Filtro Rápido por Rota</div>
-          <input id="volFilterInput" placeholder="Filtrar BR, rota ou mesa..." oninput="renderVolumosos()" style="margin-top:8px; width:100%;" />
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="label">Registrar Pacote Volumoso</div>
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:8px; margin-top:10px;">
-          <input id="volBr" placeholder="Código BR / Pacote" />
-          <input id="volRota" placeholder="Rota / Gaiola (ex: G-24)" />
-          <select id="volMesa"></select>
-          <input id="volOps" placeholder="OPS / Conferente" />
-          <select id="volTipo">
-            <option value="Volumoso Padrão">Volumoso Padrão</option>
-            <option value="Caixa Grande / Pesado">Caixa Grande / Pesado</option>
-            <option value="Fora de Calha">Fora de Calha</option>
-          </select>
-          <button class="primary" onclick="addVolumoso()">Registrar Volumoso</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="label">Controle de Volumosos</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Hora</th>
-              <th>BR / Pacote</th>
-              <th>Rota / Gaiola</th>
-              <th>Mesa / OPS</th>
-              <th>Tipo</th>
-              <th>Status</th>
-              <th>Ação</th>
-            </tr>
-          </thead>
-          <tbody id="volumososTableBody">
-            <tr><td colspan="7" class="sub">Nenhum volumoso registrado ainda.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <script>
-    const STATE_KEY = "GIA_WEB_STATE_V1";
-    const OP_SESSION_KEY = "GIA_OPERATOR_SESSION";
-    const BASE_TITLE = "G.ia — Monitor Operacional Shopee Xpress";
-
-    const defaultState = {
-      dailyGoal: 29000,
-      receive: { totalRecebido: 0, totalPorHoraTodos: 0, operators: [] },
-      auditStats: { pageNum: 1, perPageDetected: 24, totalRoutesExpected: 0, completedRoutesCount: 0, remainingRoutesCount: 0, byAuditor: [] },
-      mesas: [],
-      routeHistory: [],
-      alerts: [],
-      volumosos: []
-    };
-
-    let state = loadState();
-    let isOperatorMode = new URLSearchParams(window.location.search).get("modo") === "mesa";
-    let opSession = loadOpSession();
-    let knownAlertIds = new Set();
-    let blinkTimer = null;
-    let blinkStep = false;
-
-    function populateMesasSelects() {
-      const options = Array.from({ length: 30 }, (_, i) => {
-        const num = String(i + 1).padStart(2, "0");
-        return `<option value="Mesa ${num}">Mesa ${num}</option>`;
-      }).join("");
-
-      const opLoginMesa = document.getElementById("opLoginMesa");
-      if (opLoginMesa) {
-        opLoginMesa.innerHTML = `<option value="">Selecione a Mesa (01 a 30)...</option>` + options;
-      }
-      const mMesa = document.getElementById("mMesa");
-      if (mMesa) mMesa.innerHTML = options;
-      const volMesa = document.getElementById("volMesa");
-      if (volMesa) volMesa.innerHTML = `<option value="Sem Mesa">Sem Mesa</option>` + options;
-    }
-
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STATE_KEY);
-        return raw ? { ...defaultState, ...JSON.parse(raw) } : structuredClone(defaultState);
-      } catch {
-        return structuredClone(defaultState);
-      }
-    }
-
-    function saveState() {
-      localStorage.setItem(STATE_KEY, JSON.stringify(state));
-      window.postMessage({ source: "GIA_WEB_APP", type: "SAVE_SHARED_PATCH", patch: { webState: state } }, "*");
-    }
-
-    function loadOpSession() {
-      try {
-        return JSON.parse(localStorage.getItem(OP_SESSION_KEY) || "null");
-      } catch {
-        return null;
-      }
-    }
-
-    function fmtNum(n) { return Number(n || 0).toLocaleString("pt-BR"); }
-    function fmtDuration(sec) {
-      const s = Math.max(0, Math.floor(sec));
-      return `${Math.floor(s / 60)}min ${String(s % 60).padStart(2, "0")}s`;
-    }
-
-    function playBeep() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        [880, 1174].forEach((freq, i) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.value = freq;
-          gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.18);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.16);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + i * 0.18);
-          osc.stop(ctx.currentTime + i * 0.18 + 0.17);
-        });
-      } catch {}
-    }
-
-    function updateTabBlink(activeAlertsForOp) {
-      if (!isOperatorMode || !opSession || !activeAlertsForOp.length) {
-        if (blinkTimer) {
-          clearInterval(blinkTimer);
-          blinkTimer = null;
-        }
-        document.title = BASE_TITLE;
-        return;
-      }
-
-      if (!blinkTimer) {
-        blinkTimer = setInterval(() => {
-          blinkStep = !blinkStep;
-          const first = activeAlertsForOp[0];
-          document.title = blinkStep
-            ? `🚨 (${activeAlertsForOp.length}) PACOTE SALVO - ${first.cage}!`
-            : `⚠️ BUSCAR NO SALVAMENTO!`;
-        }, 750);
-      }
-    }
-
-    function applyLayoutMode() {
-      document.getElementById("operatorPortal").classList.toggle("hidden", !isOperatorMode);
-      document.getElementById("adminNav").classList.toggle("hidden", isOperatorMode);
-      ["recebimento", "mesas", "salvamento", "volumosos"].forEach((t) => {
-        document.getElementById("tab-" + t).classList.add("hidden");
-      });
-
-      if (isOperatorMode) {
-        document.getElementById("headerTitle").textContent = "G.ia — Terminal da Mesa";
-        document.getElementById("modeSwitchBtn").textContent = "Voltar para Gestão";
-        document.getElementById("opLoginCard").classList.toggle("hidden", !!opSession);
-        document.getElementById("opDashboard").classList.toggle("hidden", !opSession);
-        if (opSession) {
-          document.getElementById("opLoggedHeader").textContent = `${opSession.mesa} · ${opSession.ops}`;
-        }
-      } else {
-        document.getElementById("headerTitle").textContent = "G.ia — Painel Operacional Shopee Xpress";
-        document.getElementById("modeSwitchBtn").textContent = "Abrir Modo Operador (Mesa)";
-        const activeBtn = document.querySelector(".tab-btn[data-tab].active");
-        const tabName = activeBtn ? activeBtn.dataset.tab : "recebimento";
-        document.getElementById("tab-" + tabName).classList.remove("hidden");
-      }
-    }
-
-    function toggleOperatorMode() {
-      isOperatorMode = !isOperatorMode;
-      applyLayoutMode();
-      renderAll();
-    }
-
-    function loginOperatorMesa() {
-      const mesa = document.getElementById("opLoginMesa").value.trim();
-      const ops = document.getElementById("opLoginOps").value.trim().toLowerCase();
-      if (!mesa || !ops) return alert("Escolha a Mesa (01 a 30) e digite seu OPS.");
-      opSession = { mesa, ops };
-      localStorage.setItem(OP_SESSION_KEY, JSON.stringify(opSession));
-      playBeep();
-      if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
-      }
-      applyLayoutMode();
-      renderAll();
-    }
-
-    function logoutOperatorMesa() {
-      opSession = null;
-      localStorage.removeItem(OP_SESSION_KEY);
-      updateTabBlink([]);
-      applyLayoutMode();
-    }
-
-    function getAlertsForOperator() {
-      if (!opSession) return [];
-      const myMesa = opSession.mesa.toLowerCase();
-      const myOps = opSession.ops.toLowerCase();
-      const myActiveRoute = state.mesas.find(
-        (m) => m.mesa.toLowerCase() === myMesa || m.ops.toLowerCase() === myOps
-      );
-      const myCage = myActiveRoute ? myActiveRoute.rota.toUpperCase() : "";
-
-      return state.alerts.filter((a) => {
-        if (a.pickedUp) return false;
-        const matchMesa = (a.mesa || "").toLowerCase() === myMesa;
-        const matchOps = (a.ops || "").toLowerCase() === myOps;
-        const matchRoute = myCage && (a.cage || "").toUpperCase() === myCage;
-        return matchMesa || matchOps || matchRoute;
-      });
-    }
-
-    function markAlertPickedUp(id) {
-      const idx = state.alerts.findIndex((a) => a.id === id);
-      if (idx >= 0) {
-        state.alerts[idx].pickedUp = true;
-        saveState();
-        renderAll();
-      }
-    }
-
-    function renderOperatorPortal() {
-      if (!isOperatorMode || !opSession) return;
-      const now = Date.now();
-      const myAlerts = getAlertsForOperator();
-
-      let hasBrandNew = false;
-      for (const a of myAlerts) {
-        if (!knownAlertIds.has(a.id)) {
-          knownAlertIds.add(a.id);
-          hasBrandNew = true;
-        }
-      }
-      if (hasBrandNew) {
-        playBeep();
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification(`Pacote salvo — Rota ${myAlerts[0].cage}`, {
-            body: `Buscar ${myAlerts[0].br} na Estação de Salvamento.`
-          });
-        }
-      }
-
-      updateTabBlink(myAlerts);
-
-      const alertsEl = document.getElementById("opAlertsContainer");
-      alertsEl.innerHTML = myAlerts.length
-        ? myAlerts.map((a) => `
-            <div class="alert-box">
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-                <div>
-                  <span class="badge bad">${a.tipo}</span>
-                  <strong style="font-size:16px; margin-left:6px;">Rota ${a.cage}: 1 pacote</strong>
+        <div id="mesa-active-panel" class="hidden">
+          <div class="panel-box">
+            <div class="panel-title">
+              <div>
+                <strong style="font-size:18px;" id="mesa-header-info">Mesa 01 · ops179126</strong>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+                  Alerta sonoro e pisca-aba ativos apenas para a sua rota/mesa
                 </div>
-                <button class="success" onclick="markAlertPickedUp('${a.id}')">Já retirei</button>
               </div>
-              <div class="sub" style="margin-top:6px;">
-                Buscar na Estação de Salvamento · aguardando há <strong>${fmtDuration((now - a.createdAt) / 1000)}</strong>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="playAlertSound()">Testar Som</button>
+                <button class="btn btn-secondary btn-sm" onclick="sairDaMesa()">Trocar Mesa / OPS</button>
               </div>
-              <div style="margin-top:4px; color:var(--cyan); font-weight:700;">${a.br}</div>
             </div>
-          `).join("")
-        : `<div class="sub">Nenhum pacote aguardando retirada para a sua rota no momento.</div>`;
 
-      const myRoute = state.mesas.find(
-        (m) =>
-          m.status === "EM_ROTA" &&
-          (m.mesa.toLowerCase() === opSession.mesa.toLowerCase() ||
-            m.ops.toLowerCase() === opSession.ops.toLowerCase())
-      );
-
-      const currentEl = document.getElementById("opCurrentRouteContainer");
-      if (myRoute) {
-        const pct = Math.min(100, Math.round((myRoute.done / Math.max(1, myRoute.total)) * 100));
-        const sec = (now - (myRoute.routeStartTs || now)) / 1000;
-        currentEl.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong style="font-size:18px;">Rota ${myRoute.rota}</strong>
-            <span class="badge ok">Tempo: ${fmtDuration(sec)}</span>
-          </div>
-          <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;"></div></div>
-          <div style="display:flex; justify-content:space-between; font-size:13px;">
-            <span><strong>${myRoute.done}/${myRoute.total}</strong> (${pct}%)</span>
-            <span>Faltantes: <strong>${myRoute.falt}</strong> · Incorretos: <strong>${myRoute.inc}</strong></span>
-          </div>
-        `;
-      } else {
-        currentEl.innerHTML = `<div class="sub">Nenhuma rota em andamento para você agora.</div>`;
-      }
-
-      const myDone = state.routeHistory.filter(
-        (h) =>
-          h.ops.toLowerCase() === opSession.ops.toLowerCase() ||
-          h.mesa.toLowerCase() === opSession.mesa.toLowerCase()
-      );
-      const histBody = document.getElementById("opHistoryBody");
-      histBody.innerHTML = myDone.length
-        ? myDone.map((h) => `
-            <tr>
-              <td><strong>${h.rota}</strong></td>
-              <td>${h.done}/${h.total}</td>
-              <td><strong>${fmtDuration(h.durationSec)}</strong></td>
-              <td>${h.falt}</td>
-              <td>${h.inc}</td>
-            </tr>
-          `).join("")
-        : `<tr><td colspan="5" class="sub">Nenhuma rota finalizada ainda neste turno.</td></tr>`;
-    }
-
-    document.querySelectorAll(".tab-btn[data-tab]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".tab-btn[data-tab]").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        const target = btn.dataset.tab;
-        ["recebimento", "mesas", "salvamento", "volumosos"].forEach((t) => {
-          document.getElementById("tab-" + t).classList.toggle("hidden", t !== target);
-        });
-      });
-    });
-
-    function saveDailyGoal() {
-      const val = Number(document.getElementById("dailyGoalInput").value);
-      if (val > 0) {
-        state.dailyGoal = val;
-        saveState();
-        renderAll();
-      }
-    }
-
-    function requestSync() {
-      window.postMessage({ source: "GIA_WEB_APP", type: "REQUEST_SYNC" }, "*");
-    }
-
-    function triggerNextAuditPage() {
-      window.postMessage({
-        source: "GIA_WEB_APP",
-        type: "SAVE_SHARED_PATCH",
-        patch: { triggerNextAuditPage: true }
-      }, "*");
-    }
-
-    window.addEventListener("message", (event) => {
-      if (event.source !== window || !event.data || event.data.source !== "GIA_EXTENSION_BRIDGE") return;
-      const p = event.data.payload || {};
-      if (p.receive) state.receive = p.receive;
-      if (p.auditStats) state.auditStats = p.auditStats;
-      if (p.webState) {
-        state.dailyGoal = p.webState.dailyGoal || state.dailyGoal;
-        state.mesas = p.webState.mesas || state.mesas;
-        state.routeHistory = p.webState.routeHistory || state.routeHistory;
-        state.alerts = p.webState.alerts || state.alerts;
-        state.volumosos = p.webState.volumosos || state.volumosos;
-      }
-      document.getElementById("syncStatus").textContent = "Sincronizado às " + new Date().toLocaleTimeString("pt-BR");
-      renderAll();
-    });
-
-    function renderRecebimento() {
-      const goal = Math.max(1, Number(state.dailyGoal || 29000));
-      const done = Number(state.receive?.totalRecebido || 0);
-      const left = Math.max(0, goal - done);
-      const pctDone = Math.min(100, (done / goal) * 100);
-      const pctLeft = Math.max(0, 100 - pctDone);
-      const totalRate = Number(state.receive?.totalPorHoraTodos || 0);
-
-      document.getElementById("dailyGoalInput").value = goal;
-      document.getElementById("recFraction").textContent = `${fmtNum(done)} / ${fmtNum(goal)}`;
-      document.getElementById("recProgressBar").style.width = `${pctDone.toFixed(2)}%`;
-      document.getElementById("recPctText").textContent = `${pctDone.toFixed(2).replace(".", ",")}% concluído`;
-      document.getElementById("recRemainingText").textContent = `Faltam ${fmtNum(left)} (${pctLeft.toFixed(2).replace(".", ",")}%)`;
-
-      document.getElementById("kpiGoal").textContent = fmtNum(goal);
-      document.getElementById("kpiDone").textContent = fmtNum(done);
-      document.getElementById("kpiDonePct").textContent = `${pctDone.toFixed(2).replace(".", ",")}% concluído`;
-      document.getElementById("kpiLeft").textContent = fmtNum(left);
-      document.getElementById("kpiLeftPct").textContent = `${pctLeft.toFixed(2).replace(".", ",")}% restante`;
-      document.getElementById("kpiTotalRate").textContent = `${fmtNum(totalRate)} /h`;
-      document.getElementById("kpiEta").textContent =
-        left === 0 ? "Meta concluída!" : totalRate > 0 ? `Previsão: ~${(left / totalRate).toFixed(1)}h no ritmo atual` : "Aguardando ritmo...";
-
-      const tbody = document.getElementById("recOperatorsBody");
-      const opsList = state.receive?.operators || [];
-      tbody.innerHTML = opsList.length
-        ? opsList.map((op) => {
-            const r = Number(op.ratePerHour || 0);
-            let badge = `<span class="badge bad">Abaixo (< 1.000/h)</span>`;
-            if (r >= 1000 && r <= 1500) badge = `<span class="badge ok">Na Meta (1.000–1.500/h)</span>`;
-            else if (r > 1500) badge = `<span class="badge ok">Acima (> 1.500/h)</span>`;
-            else if (r >= 750) badge = `<span class="badge warn">Atenção (750–999/h)</span>`;
-            return `<tr><td><strong>${op.opsLabel || op.ops}</strong></td><td>${op.status || "-"}</td><td><strong>${fmtNum(op.totalBipado)}</strong></td><td><strong>${fmtNum(r)} /h</strong></td><td>${badge}</td></tr>`;
-          }).join("")
-        : `<tr><td colspan="5" class="sub">Aguardando leitura da tela de Gestão de Recebimento...</td></tr>`;
-    }
-
-    function upsertActiveRoute() {
-      const mesa = document.getElementById("mMesa").value.trim() || "Mesa 01";
-      const ops = document.getElementById("mOps").value.trim().toLowerCase() || "ops179126";
-      const operador = document.getElementById("mOperador").value.trim() || "Operador";
-      const rota = document.getElementById("mRota").value.trim().toUpperCase() || "G-24";
-      const total = Math.max(1, Number(document.getElementById("mTotalPct").value || 100));
-      const done = Math.max(0, Number(document.getElementById("mDonePct").value || 1));
-      const falt = Math.max(0, Number(document.getElementById("mFalt").value || 0));
-      const inc = Math.max(0, Number(document.getElementById("mInc").value || 0));
-
-      const idx = state.mesas.findIndex((m) => m.mesa.toLowerCase() === mesa.toLowerCase());
-      const item = {
-        mesa, ops, operador, rota, total, done, falt, inc,
-        status: "EM_ROTA",
-        routeStartTs: idx >= 0 && state.mesas[idx].routeStartTs ? state.mesas[idx].routeStartTs : Date.now(),
-        fleetWaitStartTs: null
-      };
-      if (idx >= 0) state.mesas[idx] = item;
-      else state.mesas.push(item);
-
-      saveState();
-      renderAll();
-    }
-
-    function finishRouteAndStartFleetWait() {
-      const mesa = document.getElementById("mMesa").value.trim() || "Mesa 01";
-      const idx = state.mesas.findIndex((m) => m.mesa.toLowerCase() === mesa.toLowerCase());
-      if (idx >= 0) {
-        const m = state.mesas[idx];
-        const durationSec = m.routeStartTs ? (Date.now() - m.routeStartTs) / 1000 : 0;
-        state.routeHistory.unshift({
-          mesa: m.mesa,
-          ops: m.ops,
-          rota: m.rota,
-          done: m.done,
-          total: m.total,
-          falt: m.falt,
-          inc: m.inc,
-          durationSec
-        });
-        m.status = "AGUARDANDO_FROTA";
-        m.fleetWaitStartTs = Date.now();
-        saveState();
-        renderAll();
-      }
-    }
-
-    function renderMesas() {
-      const a = state.auditStats || {};
-      document.getElementById("auditTotalRoutes").textContent = fmtNum(a.totalRoutesExpected || 0);
-      document.getElementById("auditDoneRoutes").textContent = fmtNum(a.completedRoutesCount || 0);
-      document.getElementById("auditLeftRoutes").textContent = fmtNum(a.remainingRoutesCount || 0);
-      document.getElementById("auditCurrentPageBadge").textContent = `Página atual: ${a.pageNum || 1}`;
-
-      const auditorsBody = document.getElementById("auditorsTableBody");
-      const list = a.byAuditor || [];
-      auditorsBody.innerHTML = list.length
-        ? list.map((item) => {
-            const hasScan = Number(item.bipados || 0) > 0;
-            const badge = hasScan
-              ? `<span class="badge ok">Bipando (${fmtNum(item.bipados)})</span>`
-              : `<span class="badge bad">Sem bipagem registrada</span>`;
-            return `
-              <tr>
-                <td><strong>${item.auditor}</strong></td>
-                <td>${item.currentRoute || "-"}</td>
-                <td>${item.doneRoutes || 0} / ${item.routesCount || 0}</td>
-                <td><strong>${fmtNum(item.bipados || 0)}</strong></td>
-                <td>${badge}</td>
-              </tr>
-            `;
-          }).join("")
-        : `<tr><td colspan="5" class="sub">Aguardando dados da Gestão de Auditoria / VT Detail...</td></tr>`;
-
-      const grid = document.getElementById("mesasCardsGrid");
-      const now = Date.now();
-      const waitingFleet = state.mesas.filter((m) => m.status === "AGUARDANDO_FROTA");
-
-      document.getElementById("fleetSummary").innerHTML = waitingFleet.length
-        ? waitingFleet.map((m) => `<div class="alert-box"><strong>${m.mesa}</strong> (${m.ops}) — Rota <strong>${m.rota}</strong> concluída. Aguardando frota há <strong>${fmtDuration((now - m.fleetWaitStartTs) / 1000)}</strong>.</div>`).join("")
-        : "Nenhuma mesa aguardando frota no momento.";
-
-      grid.innerHTML = state.mesas.length
-        ? state.mesas.map((m) => {
-            const pct = Math.min(100, Math.round((m.done / Math.max(1, m.total)) * 100));
-            return `
-              <div class="card">
-                <div style="display:flex; justify-content:space-between;">
-                  <strong>${m.mesa} · ${m.operador} (${m.ops})</strong>
-                  <span class="badge ${m.status === "EM_ROTA" ? "ok" : "bad"}">${m.status === "EM_ROTA" ? "Rota " + m.rota : "Aguardando Frota"}</span>
-                </div>
-                <div class="sub" style="margin-top:6px;">
-                  Tempo rota: <strong>${fmtDuration((now - (m.routeStartTs || now)) / 1000)}</strong>
-                  ${m.status === "AGUARDANDO_FROTA" ? ` | Espera Frota: <strong style="color:#f87171;">${fmtDuration((now - m.fleetWaitStartTs) / 1000)}</strong>` : ""}
-                </div>
-                <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%;"></div></div>
-                <div style="display:flex; justify-content:space-between; font-size:12px;">
-                  <span>${m.done}/${m.total} (${pct}%)</span>
-                  <span>Falt.: <strong>${m.falt}</strong> | Inc.: <strong>${m.inc}</strong></span>
-                </div>
+            <div class="kpi-grid" style="margin-bottom:0;">
+              <div class="kpi-card">
+                <div class="label">Rotas Finalizadas Hoje</div>
+                <div class="val c-green" id="mesa-kpi-feitas">0</div>
+                <div class="hint">Concluídas neste turno</div>
               </div>
-            `;
-          }).join("")
-        : `<div class="card"><div class="sub">Nenhuma mesa ativa no momento.</div></div>`;
-    }
+              <div class="kpi-card">
+                <div class="label">Tempo Médio por Rota</div>
+                <div class="val" style="color:var(--primary);" id="mesa-kpi-media">0min 00s</div>
+                <div class="hint" id="mesa-kpi-media-sub">Média das rotas finalizadas</div>
+              </div>
+              <div class="kpi-card">
+                <div class="label">Notificações Pendentes</div>
+                <div class="val c-red" id="mesa-kpi-alertas">0</div>
+                <div class="hint">Salvamento / devolução da rota</div>
+              </div>
+            </div>
+          </div>
 
-    function sendSaveAlert() {
-      const cage = (document.getElementById("saveCage").value || "").trim().toUpperCase();
-      const br = (document.getElementById("saveBr").value || "").trim().toUpperCase();
-      const tipo = document.getElementById("saveTipo").value;
-      if (!cage && !br) return;
+          <div class="panel-box">
+            <div class="panel-title"><span>🔔 Notificações — Pacotes para Buscar no Salvamento / Devolução</span></div>
+            <div id="mesa-notificacoes-lista">
+              <div style="color:var(--text-muted); font-size:13px;">Nenhum pacote aguardando retirada para a sua rota no momento.</div>
+            </div>
+          </div>
 
-      const matchedMesa = state.mesas.find((m) => m.rota.toUpperCase() === cage);
-      state.alerts.unshift({
-        id: "AL_" + Date.now(),
-        tipo,
-        cage: cage || "SEM-ROTA",
-        br: br || "SEM-BR",
-        mesa: matchedMesa ? matchedMesa.mesa : "",
-        ops: matchedMesa ? matchedMesa.ops : "",
-        pickedUp: false,
-        createdAt: Date.now()
-      });
-      saveState();
-      renderAll();
-    }
+          <div class="panel-box">
+            <div class="panel-title"><span>🚚 Rota em Andamento Agora</span></div>
+            <div id="mesa-rota-atual">
+              <div style="color:var(--text-muted); font-size:13px;">Nenhuma rota em andamento para a sua mesa neste momento.</div>
+            </div>
+          </div>
 
-    function addVolumoso() {
-      const br = (document.getElementById("volBr").value || "").trim().toUpperCase();
-      const rota = (document.getElementById("volRota").value || "").trim().toUpperCase();
-      const mesa = document.getElementById("volMesa").value || "Sem Mesa";
-      const ops = (document.getElementById("volOps").value || "").trim().toLowerCase() || "-";
-      const tipo = document.getElementById("volTipo").value;
-      if (!br && !rota) return alert("Informe o código BR ou a Rota/Gaiola do volumoso.");
-
-      state.volumosos.unshift({
-        id: "VOL_" + Date.now(),
-        hora: new Date().toLocaleTimeString("pt-BR"),
-        br: br || "SEM-BR",
-        rota: rota || "SEM-ROTA",
-        mesa,
-        ops,
-        tipo,
-        done: false
-      });
-
-      document.getElementById("volBr").value = "";
-      saveState();
-      renderAll();
-    }
-
-    function toggleVolumosoDone(id) {
-      const item = state.volumosos.find((v) => v.id === id);
-      if (item) {
-        item.done = !item.done;
-        saveState();
-        renderAll();
-      }
-    }
-
-    function renderVolumosos() {
-      const list = state.volumosos || [];
-      const filter = (document.getElementById("volFilterInput")?.value || "").trim().toLowerCase();
-      const filtered = filter
-        ? list.filter((v) =>
-            `${v.br} ${v.rota} ${v.mesa} ${v.ops} ${v.tipo}`.toLowerCase().includes(filter)
-          )
-        : list;
-
-      const pending = list.filter((v) => !v.done).length;
-      const done = list.filter((v) => v.done).length;
-
-      document.getElementById("volTotalCount").textContent = fmtNum(list.length);
-      document.getElementById("volPendingCount").textContent = fmtNum(pending);
-      document.getElementById("volDoneCount").textContent = fmtNum(done);
-
-      const tbody = document.getElementById("volumososTableBody");
-      tbody.innerHTML = filtered.length
-        ? filtered.map((v) => `
-            <tr>
-              <td>${v.hora}</td>
-              <td><strong>${v.br}</strong></td>
-              <td>${v.rota}</td>
-              <td>${v.mesa} (${v.ops})</td>
-              <td>${v.tipo}</td>
-              <td>${v.done ? `<span class="badge ok">Expedido</span>` : `<span class="badge warn">Pendente</span>`}</td>
-              <td><button class="tab-btn" onclick="toggleVolumosoDone('${v.id}')">${v.done ? "Reabrir" : "Dar Baixa"}</button></td>
-            </tr>
-          `).join("")
-        : `<tr><td colspan="7" class="sub">Nenhum volumoso registrado ainda.</td></tr>`;
-    }
-
-    document.getElementById("pdfFileInput").addEventListener("change", async (e) => {
-      const file = e.target.files?.[0];
-      if (!file || !window.pdfjsLib) return;
-      const buf = await file.arrayBuffer();
-      const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
-      let fullText = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        fullText += " " + content.items.map((it) => it.str).join(" ");
-      }
-      const brMatch = fullText.match(/\bBR[A-Z0-9]{8,25}\b/i);
-      const cageMatch = fullText.match(/\b[A-Z]-\d{1,3}\b/);
-      if (brMatch) document.getElementById("saveBr").value = brMatch[0].toUpperCase();
-      if (cageMatch) document.getElementById("saveCage").value = cageMatch[0].toUpperCase();
-      document.getElementById("pdfExtractPreview").textContent =
-        `Etiqueta lida: Gaiola=${cageMatch ? cageMatch[0].toUpperCase() : "-"} | BR=${brMatch ? brMatch[0].toUpperCase() : "-"}`;
-    });
-
-    function renderAll() {
-      renderRecebimento();
-      renderMesas();
-      renderVolumosos();
-      renderOperatorPortal();
-    }
-
-    populateMesasSelects();
-    applyLayoutMode();
-    setInterval(renderAll, 1000);
-    renderAll();
-    requestSync();
-  </script>
-</body>
-</html>
+          <div class="panel-box">
+            <div class="panel-title">
+              <span>✅ Rotas Que Você Já Fez (Tempo de Cada Rota)</span>
+              <span style="font-size:12.5px; color:var(--primary);" id="mesa-resumo-media-inline">Tempo médio: 0min 00s por rota</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Rota</th>
+                  <th>Pacotes</th>
+                  <th>Tempo da Rota</th>
+                  <th>Vs. Média</th>
+                  <th>F
